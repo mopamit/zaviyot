@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>שאלה 2/9 - זווית צילום</title>
+    <title>משחק זווית - צילום</title>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- עיצוב בסיסי --- */
         body {
             font-family: 'Rubik', sans-serif;
             display: flex;
@@ -27,25 +26,18 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-        }
-
-        .header {
-            background-color: #fff;
-            padding: 20px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-bottom: 1px solid #eee;
-            color: #333;
+            padding-bottom: 20px;
         }
 
         .question-text {
-            padding: 20px;
+            padding: 25px 30px;
             font-size: 1.1rem;
             line-height: 1.6;
             color: #333;
+            text-align: right;
         }
 
-        /* --- אזור המשחק והתמונה --- */
+        /* אזור המשחק */
         .game-area {
             position: relative;
             width: 100%;
@@ -74,7 +66,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none; /* כדי לא להפריע ללחיצות מסביב */
+            pointer-events: none;
         }
 
         /* אלמנטים אינטראקטיביים */
@@ -93,16 +85,16 @@
             cursor: grabbing;
         }
 
-        /* --- אזור משוב (Feedback) --- */
+        /* משוב */
         .feedback {
-            min-height: 30px;
-            margin: 10px 20px;
+            min-height: 24px;
+            margin: 10px 30px;
             padding: 10px;
             font-weight: 500;
             text-align: center;
             border-radius: 8px;
             font-size: 1rem;
-            opacity: 0; /* מוסתר בהתחלה */
+            opacity: 0;
             transition: opacity 0.3s ease;
         }
 
@@ -122,32 +114,25 @@
             border: 1px solid #f5c6cb;
         }
 
-        /* --- כפתורים ופוטר --- */
-        .footer-row {
+        /* כפתור הגשה מרכזי */
+        .footer-center {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-top: 1px solid #eee;
+            justify-content: center;
+            padding-top: 10px;
         }
 
-        .btn {
-            padding: 10px 24px;
+        .btn-submit {
+            padding: 12px 40px;
             border-radius: 50px;
             font-family: 'Rubik', sans-serif;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 500;
             cursor: pointer;
             border: none;
-            transition: all 0.3s ease;
-        }
-
-        /* כפתור הגשה - מצב פעיל */
-        .btn-submit {
-            background-color: #1DA1E1; /* צבע כחול מהעיצוב */
+            background-color: #1DA1E1;
             color: white;
             box-shadow: 0 4px 6px rgba(29, 161, 225, 0.3);
+            transition: all 0.3s ease;
         }
 
         .btn-submit:hover:not(.disable) {
@@ -155,7 +140,6 @@
             transform: translateY(-2px);
         }
 
-        /* כפתור הגשה - מצב לא פעיל */
         .btn-submit.disable {
             background-color: #bdc3c7;
             color: #fff;
@@ -164,32 +148,15 @@
             transform: none;
         }
 
-        .btn-hint {
-            background: transparent;
-            color: #666;
-            margin-right: 10px;
-        }
-        
-        .btn-hint:hover {
-            text-decoration: underline;
-        }
-
     </style>
 </head>
 <body>
 
     <main class="card">
-        <header class="header">שאלה 2/9</header>
         
-        <div class="question-text">
-            בניסיון נוסף לצילום של אותה תמונה, אחד התלמידים השתמש בעדשה רחבה יותר.
-            אבל התמונה יצאה רחבה מדי - רואים בה יותר מידי רקע מסביב.<br>
-            יש לגרור את <strong>הקרן הכחולה</strong> כך שתיווצר פתיחה שתכניס <strong>רק את החברים</strong> לפריים, בלי הרבה רקע.
-        </div>
-
         <div class="game-area">
             <div class="image-wrapper">
-                <img src="assets/images/que2-img.png" alt="תרשים צילום">
+                <img src="que2-img.png" alt="תרשים צילום">
                 
                 <svg class="overlay-svg" viewBox="0 0 735 687" preserveAspectRatio="xMidYMid slice">
                     <line id="redLine" 
@@ -213,15 +180,10 @@
 
         <div id="feedbackBox" class="feedback" aria-live="polite"></div>
 
-        <div class="footer-row">
-            <div class="footer-left">
-                <button id="submitBtn" class="btn btn-submit disable">הגשה לבדיקה</button>
-                <button type="button" class="btn btn-hint">אפשר רמז?</button>
-            </div>
-            <div class="footer-right">
-                <button type="button" class="btn" style="color:#666">לשאלה הבאה &larr;</button>
-            </div>
+        <div class="footer-center">
+            <button id="submitBtn" class="btn-submit disable">הגשה לבדיקה</button>
         </div>
+
     </main>
 
     <script>
@@ -235,12 +197,11 @@
             // מרכז הקודקוד
             const centerX = 378;
             const centerY = 503;
-            const minLength = 50; // אורך מינימלי לקרן
+            const minLength = 50; 
 
             let isDragging = false;
-            let hasMoved = false; // משתנה למעקב אם המשתמש נגע בידית
+            let hasMoved = false; 
 
-            // פונקציות עזר לחישובים
             function getMousePosition(evt) {
                 const CTM = svg.getScreenCTM();
                 if (evt.touches) { evt = evt.touches[0]; }
@@ -254,13 +215,12 @@
                 if (!isDragging) return;
                 evt.preventDefault();
 
-                // סימון שהמשתמש הזיז את הידית
                 if (!hasMoved) {
                     hasMoved = true;
-                    submitBtn.classList.remove('disable'); // הפעלת הכפתור
+                    submitBtn.classList.remove('disable'); 
                 }
 
-                // הסתרת משוב אם קיים בזמן גרירה
+                // איפוס הודעת המשוב בזמן גרירה
                 feedbackBox.className = 'feedback';
                 feedbackBox.innerText = '';
 
@@ -268,7 +228,7 @@
                 let dx = coord.x - centerX;
                 let dy = coord.y - centerY;
 
-                // חישוב מרחק למניעת קריסה למרכז
+                // חישוב מרחק ושמירה על מינימום
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 if (distance < minLength) {
                     const angle = Math.atan2(dy, dx);
@@ -276,7 +236,6 @@
                     dy = minLength * Math.sin(angle);
                 }
 
-                // עדכון מיקום
                 const newX = centerX + dx;
                 const newY = centerY + dy;
 
@@ -294,50 +253,36 @@
                 isDragging = false;
             }
 
-            // --- לוגיקת בדיקת תשובה ---
+            // --- לוגיקת בדיקה ---
             submitBtn.addEventListener('click', () => {
                 if (submitBtn.classList.contains('disable')) return;
 
-                // חישוב הזווית הנוכחית של הקו הכחול
-                // הקואורדינטות של קצה הקו
                 const x2 = parseFloat(handle.getAttribute('cx'));
                 const y2 = parseFloat(handle.getAttribute('cy'));
                 
-                // חישוב הזווית במעלות
                 const angleRad = Math.atan2(y2 - centerY, x2 - centerX);
                 let angleDeg = angleRad * (180 / Math.PI);
 
-                // נרמול הזווית לטווח נוח (אם צריך)
-                // במערכת צירים של SVG: ימין=0, למטה=90, שמאל=180/-180, למעלה=-90
-                
-                // הקו האדום נמצא בערך במינוס 35 מעלות.
-                // הקו הכחול מתחיל בערך במינוס 153 מעלות.
-                // כדי "לסגור" על החברים (לצמצם רקע), צריך להתקרב לקו האדום.
-                // טווח יעד משוער להצלחה: בין -110 ל- -60 מעלות (למעלה ושמאלה)
-                
-                const minTargetAngle = -120; // גבול שמאלי
-                const maxTargetAngle = -50;  // גבול ימני (קרוב יותר לאדום)
+                // טווח זווית נכון משוער (למעלה ושמאלה לכיוון הקו האדום)
+                // טווח זה מתאים לצמצום הפריים על הדמויות
+                const minTargetAngle = -120; 
+                const maxTargetAngle = -50;  
 
-                // בדיקת תשובה
                 if (angleDeg > minTargetAngle && angleDeg < maxTargetAngle) {
-                    // הצלחה
                     feedbackBox.innerText = "כל הכבוד! הפריים מוגדר מצוין.";
                     feedbackBox.className = "feedback visible success";
-                    blueLine.setAttribute('stroke', '#28a745'); // שינוי צבע לירוק
+                    blueLine.setAttribute('stroke', '#28a745'); 
                 } else {
-                    // כישלון
                     feedbackBox.innerText = "הזווית עדיין לא מדויקת. נסו לצמצם או להרחיב את הפריים.";
                     feedbackBox.className = "feedback visible error";
-                    blueLine.setAttribute('stroke', '#dc3545'); // שינוי צבע לאדום לסימון טעות
+                    blueLine.setAttribute('stroke', '#dc3545'); 
                     
-                    // החזרת הצבע המקורי לאחר שניה וחצי (אופציונלי)
                     setTimeout(() => {
                         blueLine.setAttribute('stroke', '#1DA1E1');
                     }, 1500);
                 }
             });
 
-            // רישום אירועים
             handle.addEventListener('mousedown', startDrag);
             handle.addEventListener('touchstart', startDrag);
             document.addEventListener('mousemove', drag);
