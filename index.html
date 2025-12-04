@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק זווית - צילום</title>
+    <style>
+        body {
+            font-family: 'Rubik', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f4f8;
+        }
+
+        .game-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .instruction {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        /* מיכל התמונה וה-SVG */
+        .image-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* רוחב מקסימלי לתצוגה */
+            margin: 0 auto;
+        }
+
+        /* התמונה עצמה - רספונסיבית */
+        .image-wrapper img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+
+        /* שכבת ה-SVG שיושבת מעל התמונה */
+        .overlay-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* מאפשר לחיצות לעבור דרך אזורים ריקים */
+        }
+
+        /* אלמנטים ברי גרירה */
+        .handle {
+            cursor: grab;
+            pointer-events: auto; /* מאפשר לחיצה על הידית */
+            transition: r 0.2s ease;
+        }
+
+        .handle:hover {
+            r: 14; /* הגדלה קלה במעבר עכבר */
+            fill: #158bc4;
+        }
+
+        .handle:active {
+            cursor: grabbing;
+        }
+
+        #blueLine {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="instruction">
+            יש לגרור את <strong>הידית הכחולה</strong> כדי להתאים את מסגרת הצילום.
+        </div>
+
+        <div class="image-wrapper">
+            <img src="assets/images/que2-img.png" alt="תרשים צילום">
+            
+            <svg class="overlay-svg" viewBox="0 0 735 687" preserveAspectRatio="xMidYMid slice">
+                
+                <line id="redLine" 
+                      x1="378" y1="503" 
+                      x2="575" y2="369" 
+                      stroke="#E04557" stroke-width="10" stroke-linecap="round" />
+
+                <line id="blueLine" 
+                      x1="378" y1="503" 
+                      x2="216" y2="423" 
+                      stroke="#1DA1E1" stroke-width="10" stroke-linecap="round" />
+
+                <circle id="blueHandle" 
+                        class="handle" 
+                        cx="216" cy="423" 
+                        r="15" 
+                        fill="#1DA1E1" stroke="white" stroke-width="2" />
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svg = document.querySelector('.overlay-svg');
+            const handle = document.getElementById('blueHandle');
+            const blueLine = document.getElementById('blueLine');
+            
+            // נקודת המרכז (הקודקוד) לפי הקוד המקורי
+            const centerX = 378;
+            const centerY = 503;
+            
+            // חישוב אורך הקו ההתחלתי (רדיוס) כדי לשמור עליו קבוע בזמן הגרירה
+            // נקודת התחלה: 216, 423
+            const initialDx = 216 - centerX;
+            const initialDy = 423 - centerY;
+            const radius = Math.sqrt(initialDx * initialDx + initialDy * initialDy);
+
+            let isDragging = false;
+
+            // פונקציה לחישוב מיקום העכבר ביחס ל-SVG
+            function getMousePosition(evt) {
+                const CTM = svg.getScreenCTM();
+                if (evt.touches) { evt = evt.touches[0]; }
+                return {
+                    x: (evt.clientX - CTM.e) / CTM.a,
+                    y: (evt.clientY - CTM.f) / CTM.d
+                };
+            }
+
+            // פונקציית הגרירה
+            function drag(evt) {
+                if (!isDragging) return;
+                evt.preventDefault();
+
+                const coord = getMousePosition(evt);
+                
+                // חישוב הזווית בין המרכז למיקום העכבר
+                const angle = Math.atan2(coord.y - centerY, coord.x - centerX);
+
+                // חישוב הקואורדינטות החדשות על בסיס הרדיוס הקבוע (כדי שהקו לא יתארך/יתקצר)
+                const newX = centerX + radius * Math.cos(angle);
+                const newY = centerY + radius * Math.sin(angle);
+
+                // עדכון הידית והקו
+                handle.setAttribute('cx', newX);
+                handle.setAttribute('cy', newY);
+                blueLine.setAttribute('x2', newX);
+                blueLine.setAttribute('y2', newY);
+            }
+
+            function startDrag(evt) {
+                isDragging = true;
+            }
+
+            function endDrag() {
+                isDragging = false;
+            }
+
+            // מאזיני אירועים (עכבר + מגע למובייל)
+            handle.addEventListener('mousedown', startDrag);
+            handle.addEventListener('touchstart', startDrag);
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, { passive: false });
+
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        });
+    </script>
+</body>
+</html>
