@@ -89,13 +89,15 @@
         .feedback {
             min-height: 24px;
             margin: 10px 30px;
-            padding: 10px;
+            padding: 15px;
             font-weight: 500;
             text-align: center;
             border-radius: 8px;
             font-size: 1rem;
             opacity: 0;
             transition: opacity 0.3s ease;
+            white-space: pre-line; /* מאפשר ירידת שורה בטקסט */
+            line-height: 1.5;
         }
 
         .feedback.visible {
@@ -154,9 +156,14 @@
 
     <main class="card">
         
+        <div class="question-text">
+            בניסיון נוסף לצילום של אותה תמונה, אחד התלמידים השתמש בעדשה רחבה יותר. אבל התמונה יצאה רחבה מדי - רואים בה יותר מידי רקע מסביב.<br>
+            יש לגרור את <strong>הקרן הכחולה</strong> כך שתיווצר פתיחה שתכניס <strong>רק את החברים</strong> לפריים, בלי הרבה רקע.
+        </div>
+
         <div class="game-area">
             <div class="image-wrapper">
-                <img src="que2-img.png" alt="תרשים צילום">
+                <img src="assets/images/que2-img.png" alt="תרשים צילום">
                 
                 <svg class="overlay-svg" viewBox="0 0 735 687" preserveAspectRatio="xMidYMid slice">
                     <line id="redLine" 
@@ -194,9 +201,14 @@
             const submitBtn = document.getElementById('submitBtn');
             const feedbackBox = document.getElementById('feedbackBox');
 
-            // מרכז הקודקוד
+            // קואורדינטות מרכז הקודקוד (מקור הקרניים)
             const centerX = 378;
             const centerY = 503;
+            
+            // קואורדינטות היעד המדויקות (לתשובה נכונה)
+            const targetX = 174;
+            const targetY = 321;
+            
             const minLength = 50; 
 
             let isDragging = false;
@@ -223,6 +235,7 @@
                 // איפוס הודעת המשוב בזמן גרירה
                 feedbackBox.className = 'feedback';
                 feedbackBox.innerText = '';
+                blueLine.setAttribute('stroke', '#1DA1E1'); // החזרת צבע לכחול
 
                 const coord = getMousePosition(evt);
                 let dx = coord.x - centerX;
@@ -257,29 +270,34 @@
             submitBtn.addEventListener('click', () => {
                 if (submitBtn.classList.contains('disable')) return;
 
-                const x2 = parseFloat(handle.getAttribute('cx'));
-                const y2 = parseFloat(handle.getAttribute('cy'));
+                // 1. חישוב הזווית הנוכחית של המשתמש
+                const currentX = parseFloat(handle.getAttribute('cx'));
+                const currentY = parseFloat(handle.getAttribute('cy'));
+                const userAngle = Math.atan2(currentY - centerY, currentX - centerX);
+
+                // 2. חישוב זווית היעד המדויקת לפי הנקודה (174, 321)
+                const targetAngle = Math.atan2(targetY - centerY, targetX - centerX);
+
+                // 3. חישוב ההפרש בין הזוויות (בערך מוחלט) במעלות
+                let diff = Math.abs(userAngle - targetAngle) * (180 / Math.PI);
                 
-                const angleRad = Math.atan2(y2 - centerY, x2 - centerX);
-                let angleDeg = angleRad * (180 / Math.PI);
+                // טיפול במעבר ה-180 מעלות (אם רלוונטי, כאן לא קריטי אבל טוב ליתר ביטחון)
+                if (diff > 180) diff = 360 - diff;
 
-                // טווח זווית נכון משוער (למעלה ושמאלה לכיוון הקו האדום)
-                // טווח זה מתאים לצמצום הפריים על הדמויות
-                const minTargetAngle = -120; 
-                const maxTargetAngle = -50;  
+                // 4. הגדרת סף דיוק (Tolerance) - כ-5 מעלות לכל כיוון נחשב תקין
+                const toleranceDegrees = 5;
 
-                if (angleDeg > minTargetAngle && angleDeg < maxTargetAngle) {
-                    feedbackBox.innerText = "כל הכבוד! הפריים מוגדר מצוין.";
+                if (diff <= toleranceDegrees) {
+                    // --- תשובה נכונה ---
+                    feedbackBox.innerText = "כל הכבוד! נכון מאוד.";
                     feedbackBox.className = "feedback visible success";
-                    blueLine.setAttribute('stroke', '#28a745'); 
+                    blueLine.setAttribute('stroke', '#28a745'); // ירוק
                 } else {
-                    feedbackBox.innerText = "הזווית עדיין לא מדויקת. נסו לצמצם או להרחיב את הפריים.";
+                    // --- תשובה שגויה ---
+                    // שימוש ב-innerHTML לא נדרש כי הגדרנו white-space: pre-line ב-CSS
+                    feedbackBox.innerText = "טעית.\nלא נורא, זו רק ההתחלה.\nנסה לסגור / לפתוח מעט את שוקי הזווית כדי להתמקד רק בקבוצה.";
                     feedbackBox.className = "feedback visible error";
-                    blueLine.setAttribute('stroke', '#dc3545'); 
-                    
-                    setTimeout(() => {
-                        blueLine.setAttribute('stroke', '#1DA1E1');
-                    }, 1500);
+                    blueLine.setAttribute('stroke', '#dc3545'); // אדום
                 }
             });
 
