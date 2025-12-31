@@ -535,7 +535,6 @@
         function initLevel() {
             if (isExploration) return;
             isLocked = false;
-            resetFeedback();
             
             // Generate Random Pedagogical Time
             let hour, minute, angleDeg;
@@ -564,6 +563,13 @@
                 } while (angleDeg <= 95 || angleDeg > 170); 
                 currentQuizAnswer = 'obtuse';
             }
+
+            // Update Time Text
+            const displayHour = hour === 0 ? 12 : hour;
+            const displayMinute = minute < 10 ? '0' + minute : minute;
+            const timeText = `${displayHour}:${displayMinute}`;
+            document.getElementById('feedback-area').innerHTML = 
+                `<span class="text-slate-600 text-lg">השעה <span class="font-bold text-indigo-600" style="font-family: monospace; font-size: 1.2em;">${timeText}</span>, סמנו את הזווית המתאימה</span>`;
 
             const hAngle = (hour % 12) * 30 + minute * 0.5;
             const mAngle = minute * 6;
