@@ -3,302 +3,658 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>סימולטור זוויות בשעון</title>
+    <title>סימולטור סוגי זוויות | רשת אמית</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
     <style>
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --danger: #EF4444;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
         body {
-            font-family: 'Heebo', sans-serif;
-            background-color: #f0f4f8;
-            color: #334155;
+            font-family: 'Rubik', sans-serif;
+            background: var(--bg-gradient);
+            color: #1e293b;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none; /* Prevent text selection while dragging */
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        /* Clock Styles */
+        .clock-container {
+            position: relative;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+            transition: transform 0.3s ease;
+            cursor: grab; /* Cursor indicates draggable */
+            touch-action: none; /* Prevent scrolling on mobile while dragging clock */
         }
         
-        /* Neumorphism style for the clock */
+        .clock-container:active {
+            cursor: grabbing;
+        }
+        
         .clock-face {
-            background: #f0f4f8;
-            box-shadow: 20px 20px 60px #cbd5e1, -20px -20px 60px #ffffff;
-            border-radius: 50%;
-            position: relative;
+            fill: white;
+            stroke: #e2e8f0;
+            stroke-width: 4;
+        }
+
+        .clock-number {
+            font-size: 24px;
+            font-weight: 500;
+            fill: #94a3b8;
+            font-family: 'Rubik', sans-serif;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none; /* Let clicks pass through numbers */
         }
 
         .hand {
-            position: absolute;
-            bottom: 50%;
-            left: 50%;
-            transform-origin: bottom center;
-            background-color: #334155;
-            border-radius: 4px;
-            transition: transform 0.5s cubic-bezier(0.4, 2.08, 0.55, 0.44);
-            z-index: 10;
+            stroke-linecap: round;
+            transform-origin: 150px 150px;
+            pointer-events: none; /* Let interactions happen on the svg container */
+        }
+
+        /* Smooth transition only when NOT dragging (controlled by JS class) */
+        .hand-smooth {
+            transition: transform 0.1s linear;
+        }
+        
+        .hand-no-transition {
+            transition: none !important;
         }
 
         .hour-hand {
-            width: 8px;
-            height: 70px;
-            margin-left: -4px;
-            background-color: #1e293b;
+            stroke: #1e293b;
+            stroke-width: 8;
         }
 
         .minute-hand {
-            width: 4px;
-            height: 100px;
-            margin-left: -2px;
-            background-color: #64748b;
+            stroke: #64748b;
+            stroke-width: 5;
         }
 
-        .center-dot {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 16px;
-            height: 16px;
-            background-color: #ef4444;
+        .angle-arc {
+            fill: rgba(79, 70, 229, 0.15);
+            stroke: #4F46E5;
+            stroke-width: 2;
+            stroke-dasharray: 5,5;
+            pointer-events: none;
+        }
+
+        .center-pin {
+            fill: #4F46E5;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+            pointer-events: none;
+        }
+
+        /* Buttons */
+        .btn-action {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-action:active {
+            transform: scale(0.95);
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+            cursor: pointer;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 20;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: #4F46E5;
+            cursor: pointer;
+            margin-top: -8px; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
 
-        .number {
-            position: absolute;
+        input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
-            height: 100%;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #94a3b8;
-        }
-
-        /* Interactive Buttons */
-        .btn-option {
-            transition: all 0.2s ease;
-        }
-        .btn-option:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        .btn-option:active {
-            transform: translateY(1px);
+            height: 8px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 4px;
         }
 
         /* Animations */
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
-        }
-        .shake {
-            animation: shake 0.4s ease-in-out;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .fade-enter {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        
+        .shake-animation {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="flex flex-col items-center justify-center p-4">
 
-    <div class="absolute top-6 right-6 z-50">
-        <img src="logo.png" alt="לוגו אמית" class="h-16 w-auto object-contain drop-shadow-md">
-    </div>
+    <!-- Header / Logo Area -->
+    <header class="w-full max-w-4xl flex justify-between items-center mb-6 px-4">
+        <div>
+            <h2 class="text-sm font-bold text-slate-500 tracking-wider">מעבדה וירטואלית</h2>
+            <h1 class="text-2xl font-bold text-slate-800">גיאומטריה אינטראקטיבית</h1>
+        </div>
+        <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-100 ml-2">
+            <!-- Logo on Left (RTL end) -->
+            <img src="logo.png" alt="לוגו אמית" class="h-12 w-auto object-contain">
+        </div>
+    </header>
 
-    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center relative overflow-hidden">
+    <!-- Main Card -->
+    <main class="glass-card rounded-3xl p-8 w-full max-w-lg relative z-10 fade-enter">
         
-        <h1 class="text-3xl font-bold mb-2 text-slate-800">מעבדת הזוויות</h1>
-        <p class="text-slate-500 mb-8">הביטו בשעון: איזו זווית נוצרת בין המחוגים?</p>
+        <!-- Status Bar -->
+        <div class="text-center mb-4">
+            <h2 id="mode-title" class="text-3xl font-bold text-slate-800 mb-2">סוגי זוויות</h2>
+            <p id="mode-desc" class="text-slate-500 text-lg">גררו את המחוג או הזיזו את הסמן כדי לשנות את הזווית</p>
+        </div>
 
-        <div class="flex justify-center mb-10">
-            <div class="clock-face w-64 h-64 relative border-4 border-slate-100">
-                <div class="center-dot"></div>
-                <div class="hand hour-hand" id="hourHand"></div>
-                <div class="hand minute-hand" id="minuteHand"></div>
-                
-                <script>
-                    for(let i=1; i<=12; i++) {
-                        document.write(`<div class="number" style="transform: rotate(${i*30}deg);"><span style="display:inline-block; transform: rotate(-${i*30}deg); padding-top: 10px;">${i}</span></div>`);
-                    }
-                </script>
+        <!-- Clock Visualization -->
+        <div class="flex justify-center mb-6 relative">
+            <div class="clock-container w-[300px] h-[300px]" id="clock-container">
+                <svg width="300" height="300" viewBox="0 0 300 300">
+                    <!-- Clock Face -->
+                    <circle cx="150" cy="150" r="140" class="clock-face" />
+                    <g id="clock-marks"></g>
+                    <!-- The Angle Arc -->
+                    <path id="angle-arc" class="angle-arc" d="" />
+                    <!-- Hands -->
+                    <line id="hour-hand" x1="150" y1="150" x2="150" y2="80" class="hand hour-hand hand-smooth" />
+                    <line id="minute-hand" x1="150" y1="150" x2="150" y2="40" class="hand minute-hand hand-smooth" />
+                    <circle cx="150" cy="150" r="8" class="center-pin" />
+                </svg>
             </div>
         </div>
 
-        <div id="feedback" class="h-16 mb-4 flex items-center justify-center text-lg font-medium">
+        <!-- EXPLORATION MODE CONTROLS -->
+        <div id="exploration-controls" class="space-y-6">
+            <!-- Dynamic Data Display -->
+            <div class="bg-indigo-50 rounded-xl p-4 text-center border border-indigo-100">
+                <div class="text-sm text-indigo-400 font-bold tracking-wide uppercase mb-1">נתוני הזווית</div>
+                <div class="flex items-end justify-center gap-2">
+                    <span id="display-degrees" class="text-4xl font-bold text-indigo-700">90°</span>
+                    <span id="display-type" class="text-xl font-medium text-indigo-600 pb-1">- זווית ישרה</span>
+                </div>
             </div>
 
-        <div class="grid grid-cols-3 gap-4 mb-6">
-            <button onclick="checkAnswer('acute')" class="btn-option bg-emerald-100 text-emerald-800 py-3 rounded-xl hover:bg-emerald-200 font-bold border border-emerald-200">
-                זווית חדה
-            </button>
-            <button onclick="checkAnswer('right')" class="btn-option bg-blue-100 text-blue-800 py-3 rounded-xl hover:bg-blue-200 font-bold border border-blue-200">
-                זווית ישרה
-            </button>
-            <button onclick="checkAnswer('obtuse')" class="btn-option bg-rose-100 text-rose-800 py-3 rounded-xl hover:bg-rose-200 font-bold border border-rose-200">
-                זווית קהה
+            <!-- Slider -->
+            <div class="px-2">
+                <input type="range" id="time-slider" min="0" max="720" value="180" class="w-full" oninput="updateExploration(this.value)">
+                <div class="flex justify-between text-xs text-slate-400 mt-2">
+                    <span>12:00</span>
+                    <span>3:00</span>
+                    <span>6:00</span>
+                    <span>9:00</span>
+                    <span>12:00</span>
+                </div>
+            </div>
+
+            <button onclick="startQuizMode()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                <span>🎯</span>
+                מוכנים? בחן את עצמך
             </button>
         </div>
 
-        <button onclick="generateTime()" class="text-slate-400 text-sm underline hover:text-slate-600 mb-2">
-            דלג לשאלה הבאה
+        <!-- QUIZ MODE CONTROLS (Hidden Initially) -->
+        <div id="quiz-controls" class="hidden">
+            <!-- Feedback Section -->
+            <div id="feedback-area" class="h-16 flex items-center justify-center mb-6 transition-all duration-300">
+                <span class="text-slate-400 text-sm">איזו זווית מופיעה בשעון?</span>
+            </div>
+
+            <!-- Answer Buttons -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <button onclick="submitAnswer('acute')" class="btn-action bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-4 rounded-2xl font-bold text-lg shadow-sm">
+                    זווית חדה
+                    <div class="text-xs font-normal opacity-75 mt-1">קטנה מ-90°</div>
+                </button>
+                <button onclick="submitAnswer('right')" class="btn-action bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 py-4 rounded-2xl font-bold text-lg shadow-sm">
+                    זווית ישרה
+                    <div class="text-xs font-normal opacity-75 mt-1">בדיוק 90°</div>
+                </button>
+                <button onclick="submitAnswer('obtuse')" class="btn-action bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 py-4 rounded-2xl font-bold text-lg shadow-sm">
+                    זווית קהה
+                    <div class="text-xs font-normal opacity-75 mt-1">גדולה מ-90°</div>
+                </button>
+            </div>
+
+            <div class="flex justify-between items-center">
+                 <button onclick="startExplorationMode()" class="text-slate-400 hover:text-slate-600 font-medium text-sm underline">
+                    חזרה למצב למידה
+                </button>
+                <button onclick="initLevel()" class="text-indigo-600 hover:text-indigo-800 font-bold text-sm transition-colors flex items-center gap-1">
+                    דלג לשאלה הבאה
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Quiz Modal for Extra Practice -->
+    <div class="mt-8 z-10 hidden" id="extra-practice-btn-container">
+         <button onclick="toggleQuiz(true)" class="bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-full font-bold shadow-lg hover:bg-indigo-50 transition-all flex items-center gap-2">
+            <span>✍️</span>
+            לשאלות אמריקאיות נוספות
         </button>
     </div>
 
-    <div class="mt-8">
-        <button onclick="togglePractice()" class="bg-indigo-600 text-white px-8 py-3 rounded-full shadow-lg hover:bg-indigo-700 transition flex items-center gap-2 text-lg">
-            <span>📝</span> לתרגול שאלות אמריקאיות
-        </button>
-    </div>
+    <!-- Background Elements -->
+    <div class="fixed top-20 left-10 w-32 h-32 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style="animation-delay: 0s"></div>
+    <div class="fixed top-40 right-10 w-32 h-32 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style="animation-delay: 2s"></div>
+    <div class="fixed -bottom-8 left-20 w-32 h-32 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style="animation-delay: 4s"></div>
 
-    <div id="practiceSection" class="fixed inset-0 bg-black/50 hidden backdrop-blur-sm z-40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl relative fade-in">
-            <button onclick="togglePractice()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600">✕ סגור</button>
-            <h2 class="text-2xl font-bold mb-6 text-center">תרגול ידע</h2>
-            
-            <div id="quiz-container" class="space-y-6">
-                <div class="border-b pb-4">
-                    <p class="font-bold mb-3">1. איזו זווית גדולה מ-90 מעלות וקטנה מ-180?</p>
-                    <div class="flex gap-2 flex-wrap">
-                        <button onclick="quizFeedback(this, false)" class="px-4 py-2 bg-slate-100 rounded hover:bg-slate-200">זווית חדה</button>
-                        <button onclick="quizFeedback(this, true)" class="px-4 py-2 bg-slate-100 rounded hover:bg-slate-200">זווית קהה</button>
-                        <button onclick="quizFeedback(this, false)" class="px-4 py-2 bg-slate-100 rounded hover:bg-slate-200">זווית ישרה</button>
+    <!-- Extra Quiz Modal (Same as before) -->
+    <div id="quiz-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="quiz-content">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg">מבחן ידע: זוויות</h3>
+                <button onclick="toggleQuiz(false)" class="hover:bg-indigo-700 p-1 rounded-full">✕</button>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto space-y-8">
+                <!-- Question 1 -->
+                <div class="quiz-item">
+                    <p class="font-bold text-lg text-slate-800 mb-3">1. איזו מהזוויות הבאות היא זווית קהה?</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q1" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, false)"><span class="mr-3">45 מעלות</span></label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q1" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, true)"><span class="mr-3">120 מעלות</span></label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q1" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, false)"><span class="mr-3">90 מעלות</span></label>
                     </div>
-                    <p class="quiz-msg text-sm mt-2"></p>
+                    <div class="quiz-feedback mt-2 text-sm font-bold min-h-[20px]"></div>
                 </div>
-
-                <div class="border-b pb-4">
-                    <p class="font-bold mb-3">2. השעה 3:00 בדיוק. איזו זווית יוצרים המחוגים?</p>
-                    <div class="flex gap-2 flex-wrap">
-                        <button onclick="quizFeedback(this, true)" class="px-4 py-2 bg-slate-100 rounded hover:bg-slate-200">זווית ישרה</button>
-                        <button onclick="quizFeedback(this, false)" class="px-4 py-2 bg-slate-100 rounded hover:bg-slate-200">זווית שטוחה</button>
-                        <button onclick="quizFeedback(this, false)" class="px-4 py-2 bg-slate-100 rounded hover:bg-slate-200">זווית חדה</button>
+                <!-- Question 2 -->
+                <div class="quiz-item">
+                    <p class="font-bold text-lg text-slate-800 mb-3">2. מה מאפיין זווית ישרה?</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, true)"><span class="mr-3">היא שווה בדיוק ל-90 מעלות</span></label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, false)"><span class="mr-3">היא קטנה מ-90 מעלות</span></label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, false)"><span class="mr-3">היא גדולה מ-180</span></label>
                     </div>
-                    <p class="quiz-msg text-sm mt-2"></p>
+                    <div class="quiz-feedback mt-2 text-sm font-bold min-h-[20px]"></div>
                 </div>
+            </div>
+            <div class="bg-slate-50 p-4 text-center border-t">
+                <button onclick="toggleQuiz(false)" class="text-indigo-600 font-bold hover:underline">סיום</button>
             </div>
         </div>
     </div>
 
     <script>
-        let currentAngleType = '';
-        let isProcessing = false;
+        let currentQuizAnswer = '';
+        let isLocked = false;
+        let isExploration = true;
 
-        const successMessages = ["כל הכבוד! אתה אלוף! 🌟", "תשובה מדויקת! גאה בך! 🚀", "מעולה! עבודה נהדרת! 🏆", "בול! יש לך עין חדה! 👁️"];
-        const failMessages = ["לא נורא, נסה שוב 💪", "כמעט! תסתכל טוב יותר על המרווח 🤔", "טעות קטנה, ההצלחה בדרך 🌱"];
+        window.onload = () => {
+            drawClockFace();
+            // Start in exploration mode with 3:00
+            updateExploration(180); 
+            setupClockInteractions();
+        };
 
-        function generateTime() {
-            // Reset state
-            document.getElementById('feedback').innerHTML = '';
-            document.getElementById('feedback').className = 'h-16 mb-4 flex items-center justify-center text-lg font-medium';
-            isProcessing = false;
+        function drawClockFace() {
+            const marksGroup = document.getElementById('clock-marks');
+            for (let i = 1; i <= 12; i++) {
+                const angle = (i * 30) * (Math.PI / 180);
+                const r = 110; 
+                const x = 150 + r * Math.sin(angle);
+                const y = 150 - r * Math.cos(angle);
+                
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute('x', x);
+                text.setAttribute('y', y);
+                text.setAttribute('class', 'clock-number');
+                text.textContent = i;
+                marksGroup.appendChild(text);
 
-            // Generate logical random times (avoiding confusing near-straight lines for simplicity)
-            let hour = Math.floor(Math.random() * 12);
-            let minute = Math.floor(Math.random() * 12) * 5; // 0, 5, 10... 55
-
-            // Calculate Angle
-            // Hour hand moves 0.5 degrees per minute. Minute hand moves 6 degrees per minute.
-            // Position in degrees:
-            let mPos = minute * 6;
-            let hPos = (hour * 30) + (minute * 0.5);
-
-            let angle = Math.abs(hPos - mPos);
-            if (angle > 180) angle = 360 - angle;
-
-            // Filter out angles close to borderlines to avoid confusion (optional visual improvement)
-            if (Math.abs(angle - 90) < 5 || angle < 10 || angle > 170) {
-                generateTime(); // Retry
-                return;
+                const r1 = 130, r2 = 140;
+                const x1 = 150 + r1 * Math.sin(angle);
+                const y1 = 150 - r1 * Math.cos(angle);
+                const x2 = 150 + r2 * Math.sin(angle);
+                const y2 = 150 - r2 * Math.cos(angle);
+                
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', '#cbd5e1');
+                line.setAttribute('stroke-width', '2');
+                marksGroup.appendChild(line);
             }
+        }
 
-            // Set Type
-            if (Math.abs(angle - 90) < 0.1) currentAngleType = 'right'; // Should be handled by 3:00 / 9:00 logic usually
-            else if (angle < 90) currentAngleType = 'acute';
-            else currentAngleType = 'obtuse';
+        /* --- CLOCK INTERACTION LOGIC (DRAG TO MOVE) --- */
+        function setupClockInteractions() {
+            const container = document.getElementById('clock-container');
+            let isDragging = false;
 
-            // Override for exact Right Angles (visual clarity)
-            const rightAngleTimes = [[3,0], [9,0]];
-            if (Math.random() < 0.2) { // 20% chance for a perfect right angle
-                const pick = rightAngleTimes[Math.floor(Math.random() * rightAngleTimes.length)];
+            const handleStart = (e) => {
+                if (!isExploration) return;
+                isDragging = true;
+                // Disable smooth transition while dragging for instant feedback
+                document.querySelectorAll('.hand').forEach(el => {
+                    el.classList.remove('hand-smooth');
+                    el.classList.add('hand-no-transition');
+                });
+                document.getElementById('angle-arc').style.transition = 'none';
+                handleMove(e); // Update immediately on click
+            };
+
+            const handleMove = (e) => {
+                if (!isDragging || !isExploration) return;
+                e.preventDefault();
+
+                // Get coordinates relative to SVG center (150, 150)
+                const rect = container.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const x = clientX - rect.left - (rect.width / 2);
+                const y = clientY - rect.top - (rect.height / 2);
+
+                // Calculate angle in degrees (0 is 12 o'clock, clockwise)
+                // Math.atan2(y, x) gives angle from X axis (3 o'clock)
+                // We want 12 o'clock to be 0
+                let angle = Math.atan2(y, x) * (180 / Math.PI);
+                angle += 90; // Rotate so -90 (12 o'clock) becomes 0
+                if (angle < 0) angle += 360;
+
+                // Angle (0-360) maps to minutes (0-60)
+                // We need to sync this with the slider which handles total minutes (0-720)
+                // We will determine the closest "total minutes" based on current slider value
+                
+                const currentTotal = parseInt(document.getElementById('time-slider').value);
+                const currentHour = Math.floor(currentTotal / 60);
+                
+                // Calculate target minutes for this hour
+                let targetMinute = (angle / 6); // 360deg = 60min
+                
+                // Heuristic to handle 12-crossing (dragging past 12)
+                // Compare new minutes to old minutes (modulo 60)
+                const oldMinute = currentTotal % 60;
+                let diff = targetMinute - oldMinute;
+                
+                // If jump is huge, we probably crossed 12
+                if (diff > 30) diff -= 60;
+                if (diff < -30) diff += 60;
+                
+                let newTotal = currentTotal + diff;
+                
+                // Clamp to slider bounds or wrap
+                if (newTotal < 0) newTotal = 0; 
+                if (newTotal > 720) newTotal = 720; // Soft limit or wrap? 720 is nice limit.
+
+                // Update Slider
+                document.getElementById('time-slider').value = newTotal;
+                updateExploration(newTotal);
+            };
+
+            const handleEnd = () => {
+                isDragging = false;
+                // Re-enable smooth transition
+                document.querySelectorAll('.hand').forEach(el => {
+                    el.classList.remove('hand-no-transition');
+                    el.classList.add('hand-smooth');
+                });
+                document.getElementById('angle-arc').style.transition = 'd 0.1s linear';
+            };
+
+            container.addEventListener('mousedown', handleStart);
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+
+            container.addEventListener('touchstart', handleStart, {passive: false});
+            window.addEventListener('touchmove', handleMove, {passive: false});
+            window.addEventListener('touchend', handleEnd);
+        }
+
+
+        /* --- EXPLORATION LOGIC --- */
+        function updateExploration(minutesInput) {
+            const totalMinutes = parseInt(minutesInput);
+            
+            // Calculate Hands
+            // Hour hand: 0.5 deg per minute
+            // Minute hand: 6 deg per minute of the hour (totalMinutes % 60)
+            const hourDeg = totalMinutes * 0.5;
+            const minuteDeg = totalMinutes * 6;
+
+            updateClockVisuals(hourDeg, minuteDeg);
+
+            // Calculate Angle for Display
+            // Normalize to 0-360
+            let h = hourDeg % 360;
+            let m = minuteDeg % 360;
+            let diff = Math.abs(h - m);
+            if (diff > 180) diff = 360 - diff;
+            
+            const degrees = Math.round(diff);
+            
+            // Update Text
+            const degreeEl = document.getElementById('display-degrees');
+            const typeEl = document.getElementById('display-type');
+            
+            degreeEl.textContent = degrees + "°";
+            
+            if (degrees === 90) {
+                typeEl.textContent = "- זווית ישרה";
+                typeEl.className = "text-xl font-medium text-indigo-600 pb-1";
+            } else if (degrees < 90) {
+                typeEl.textContent = "- זווית חדה";
+                typeEl.className = "text-xl font-medium text-emerald-600 pb-1";
+            } else if (degrees > 90 && degrees < 180) {
+                typeEl.textContent = "- זווית קהה";
+                typeEl.className = "text-xl font-medium text-rose-600 pb-1";
+            } else if (degrees === 180) {
+                typeEl.textContent = "- זווית שטוחה";
+                typeEl.className = "text-xl font-medium text-slate-600 pb-1";
+            } else {
+                 typeEl.textContent = "";
+            }
+        }
+
+        /* --- QUIZ LOGIC --- */
+        function startQuizMode() {
+            isExploration = false;
+            document.getElementById('exploration-controls').classList.add('hidden');
+            document.getElementById('quiz-controls').classList.remove('hidden');
+            document.getElementById('extra-practice-btn-container').classList.remove('hidden');
+            
+            document.getElementById('mode-title').textContent = "בחן את עצמך";
+            document.getElementById('mode-desc').textContent = "הביטו בשעון ובחרו את סוג הזווית הנכון";
+            
+            // Smoother hand transition for quiz
+            document.querySelectorAll('.hand').forEach(el => {
+                el.classList.remove('hand-no-transition');
+                el.classList.add('hand-smooth');
+                 el.style.transition = "transform 1s cubic-bezier(0.4, 2.5, 0.55, 0.44)";
+            });
+            document.getElementById('angle-arc').style.transition = "d 0.5s ease";
+
+            initLevel();
+        }
+
+        function startExplorationMode() {
+            isExploration = true;
+            document.getElementById('quiz-controls').classList.add('hidden');
+            document.getElementById('extra-practice-btn-container').classList.add('hidden');
+            document.getElementById('exploration-controls').classList.remove('hidden');
+            
+            document.getElementById('mode-title').textContent = "סוגי זוויות";
+            document.getElementById('mode-desc').textContent = "גררו את המחוג או הזיזו את הסמן כדי לשנות את הזווית";
+
+            // Faster transition for slider/drag
+            document.querySelectorAll('.hand').forEach(el => {
+                el.style.transition = ""; 
+                el.classList.add('hand-smooth');
+            });
+            document.getElementById('angle-arc').style.transition = "d 0.1s linear";
+
+            // Reset slider val
+            const val = document.getElementById('time-slider').value;
+            updateExploration(val);
+        }
+
+        function initLevel() {
+            if (isExploration) return;
+            isLocked = false;
+            resetFeedback();
+            
+            // Generate Random Pedagogical Time
+            let hour, minute, angleDeg;
+            let type = Math.random(); 
+
+            if (type < 0.3) { // Right Angle
+                const options = [[3,0], [9,0], [3, 0], [9, 0]]; 
+                const pick = options[Math.floor(Math.random() * options.length)];
                 hour = pick[0];
                 minute = pick[1];
-                currentAngleType = 'right';
-                hPos = (hour * 30);
-                mPos = minute * 6;
+                currentQuizAnswer = 'right';
+            } 
+            else if (type < 0.65) { // Acute
+                do {
+                    hour = Math.floor(Math.random() * 12);
+                    minute = Math.floor(Math.random() * 12) * 5;
+                    angleDeg = calculateAngleFromTime(hour, minute);
+                } while (angleDeg >= 85 || angleDeg < 20); 
+                currentQuizAnswer = 'acute';
+            } 
+            else { // Obtuse
+                do {
+                    hour = Math.floor(Math.random() * 12);
+                    minute = Math.floor(Math.random() * 12) * 5;
+                    angleDeg = calculateAngleFromTime(hour, minute);
+                } while (angleDeg <= 95 || angleDeg > 170); 
+                currentQuizAnswer = 'obtuse';
             }
 
-            // Update DOM
-            document.getElementById('hourHand').style.transform = `rotate(${hPos}deg)`;
-            document.getElementById('minuteHand').style.transform = `rotate(${mPos}deg)`;
+            const hAngle = (hour % 12) * 30 + minute * 0.5;
+            const mAngle = minute * 6;
+            updateClockVisuals(hAngle, mAngle);
         }
 
-        function checkAnswer(userChoice) {
-            if (isProcessing) return;
-            const feedbackEl = document.getElementById('feedback');
+        function calculateAngleFromTime(h, m) {
+            const hAngle = (h % 12) * 30 + m * 0.5;
+            const mAngle = m * 6;
+            let diff = Math.abs(hAngle - mAngle);
+            if (diff > 180) diff = 360 - diff;
+            return diff;
+        }
 
-            if (userChoice === currentAngleType) {
-                // Success
-                isProcessing = true;
-                const msg = successMessages[Math.floor(Math.random() * successMessages.length)];
-                feedbackEl.innerHTML = `<span class="text-emerald-600 font-bold text-2xl animate-bounce">${msg}</span>`;
-                triggerConfetti();
-                setTimeout(generateTime, 2500);
+        function updateClockVisuals(hAngle, mAngle) {
+            document.getElementById('hour-hand').style.transform = `rotate(${hAngle}deg)`;
+            document.getElementById('minute-hand').style.transform = `rotate(${mAngle}deg)`;
+            drawAngleArc(hAngle, mAngle);
+        }
+
+        function drawAngleArc(hDeg, mDeg) {
+            let start = Math.min(hDeg, mDeg);
+            let end = Math.max(hDeg, mDeg);
+            let diff = end - start;
+
+            if (diff > 180) {
+                const temp = start;
+                start = end;
+                end = temp + 360; 
+            }
+
+            const r = 50, cx = 150, cy = 150;
+            const startRad = (start - 90) * Math.PI / 180;
+            const endRad = (end - 90) * Math.PI / 180;
+
+            const x1 = cx + r * Math.cos(startRad);
+            const y1 = cy + r * Math.sin(startRad);
+            const x2 = cx + r * Math.cos(endRad);
+            const y2 = cy + r * Math.sin(endRad);
+
+            const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+            document.getElementById('angle-arc').setAttribute('d', path);
+        }
+
+        function submitAnswer(type) {
+            if (isLocked || isExploration) return;
+            const feedbackEl = document.getElementById('feedback-area');
+
+            if (type === currentQuizAnswer) {
+                isLocked = true;
+                triggerSuccessEffect();
+                feedbackEl.innerHTML = `<div class="bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full flex items-center gap-2 animate-bounce"><span class="text-xl">✅</span><span class="font-bold text-lg">כל הכבוד! תשובה נכונה!</span></div>`;
+                setTimeout(initLevel, 2500);
             } else {
-                // Fail
-                const msg = failMessages[Math.floor(Math.random() * failMessages.length)];
-                feedbackEl.innerHTML = `<span class="text-rose-500 font-bold">${msg}</span>`;
-                feedbackEl.classList.add('shake');
-                setTimeout(() => feedbackEl.classList.remove('shake'), 500);
+                feedbackEl.innerHTML = `<div class="bg-rose-100 text-rose-800 px-6 py-2 rounded-full flex items-center gap-2 shake-animation"><span class="text-xl">❌</span><span class="font-bold text-lg">לא מדויק, נסו שוב</span></div>`;
+                setTimeout(() => { if(feedbackEl.firstElementChild) feedbackEl.firstElementChild.classList.remove('shake-animation'); }, 500);
             }
         }
 
-        function triggerConfetti() {
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#34d399', '#60a5fa', '#f472b6']
-            });
+        function resetFeedback() {
+            document.getElementById('feedback-area').innerHTML = `<span class="text-slate-400 text-sm">איזו זווית מופיעה בשעון?</span>`;
         }
 
-        // Quiz Logic
-        function togglePractice() {
-            const el = document.getElementById('practiceSection');
-            if (el.classList.contains('hidden')) {
-                el.classList.remove('hidden');
+        function triggerSuccessEffect() {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#4F46E5', '#10B981', '#F59E0B'] });
+        }
+
+        /* --- MODAL LOGIC --- */
+        function toggleQuiz(show) {
+            const modal = document.getElementById('quiz-modal');
+            const content = document.getElementById('quiz-content');
+            if (show) {
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
             } else {
-                el.classList.add('hidden');
+                modal.classList.add('opacity-0'); content.classList.remove('scale-100'); content.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
             }
         }
 
-        function quizFeedback(btn, isCorrect) {
-            const msgEl = btn.parentElement.nextElementSibling;
-            // Reset buttons in this group
-            const siblings = btn.parentElement.children;
-            for (let sib of siblings) {
-                sib.classList.remove('bg-green-200', 'bg-red-200', 'ring-2');
-                sib.classList.add('bg-slate-100');
-            }
-
+        function checkQuiz(input, isCorrect) {
+            const feedbackDiv = input.closest('.quiz-item').querySelector('.quiz-feedback');
             if (isCorrect) {
-                btn.classList.remove('bg-slate-100');
-                btn.classList.add('bg-green-200', 'ring-2', 'ring-green-500');
-                msgEl.textContent = "נכון מאוד! 👏";
-                msgEl.className = "quiz-msg text-sm mt-2 text-green-600 font-bold";
+                feedbackDiv.textContent = "נכון מאוד! כל הכבוד 👏";
+                feedbackDiv.className = "quiz-feedback mt-2 text-sm font-bold text-emerald-600";
+                triggerSuccessEffect();
             } else {
-                btn.classList.remove('bg-slate-100');
-                btn.classList.add('bg-red-200');
-                msgEl.textContent = "לא בדיוק, נסה שוב.";
-                msgEl.className = "quiz-msg text-sm mt-2 text-red-500";
+                feedbackDiv.textContent = "לא בדיוק.";
+                feedbackDiv.className = "quiz-feedback mt-2 text-sm font-bold text-rose-500";
             }
         }
-
-        // Start game
-        generateTime();
     </script>
 </body>
 </html>
