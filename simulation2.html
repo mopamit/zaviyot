@@ -585,25 +585,41 @@
         }
 
         function drawAngleArc(hDeg, mDeg) {
-            let start = Math.min(hDeg, mDeg);
-            let end = Math.max(hDeg, mDeg);
-            let diff = end - start;
+            // Normalize angles to 0-360
+            let h = hDeg % 360;
+            let m = mDeg % 360;
+            if (h < 0) h += 360;
+            if (m < 0) m += 360;
 
-            if (diff > 180) {
-                const temp = start;
-                start = end;
-                end = temp + 360; 
+            let start = Math.min(h, m);
+            let end = Math.max(h, m);
+            let diff = end - start;
+            
+            let finalStart, finalEnd;
+
+            // We always want to draw the smaller angle (<= 180)
+            if (diff <= 180) {
+                // Draw clockwise from start to end
+                finalStart = start;
+                finalEnd = end;
+            } else {
+                // The shorter path crosses the 0/360 boundary
+                // Draw clockwise from end to start
+                finalStart = end;
+                finalEnd = start;
             }
 
             const r = 50, cx = 150, cy = 150;
-            const startRad = (start - 90) * Math.PI / 180;
-            const endRad = (end - 90) * Math.PI / 180;
+            // Subtract 90 to convert clock-deg (0 at top) to trig-deg (0 at right)
+            const startRad = (finalStart - 90) * Math.PI / 180;
+            const endRad = (finalEnd - 90) * Math.PI / 180;
 
             const x1 = cx + r * Math.cos(startRad);
             const y1 = cy + r * Math.sin(startRad);
             const x2 = cx + r * Math.cos(endRad);
             const y2 = cy + r * Math.sin(endRad);
 
+            // Sweep flag is 1 (clockwise)
             const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
             document.getElementById('angle-arc').setAttribute('d', path);
         }
