@@ -16,52 +16,40 @@
 
         .canvas-container {
             position: relative;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            border-radius: 1rem;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15); /* Stronger shadow for pop */
+            border-radius: 1.5rem; /* More rounded */
             background-color: white;
             overflow: hidden;
         }
 
         #logo {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 24px;
+            right: 24px;
             width: 80px; /* Adjust size as needed */
             height: auto;
             z-index: 10;
             pointer-events: none; /* Let clicks pass through */
         }
-        
-        /* Custom tooltip for the drag point */
-        .instruction-tip {
-            position: absolute;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col items-center justify-center p-4">
+<body class="h-screen w-screen flex flex-col items-center justify-center bg-gray-50">
 
-    <!-- Header / Info Panel -->
-    <div class="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur p-4 rounded-xl shadow-sm border border-gray-100 max-w-xs">
+    <!-- Header / Info Panel - Floating -->
+    <div class="absolute top-6 left-6 z-20 bg-white/95 backdrop-blur-sm p-5 rounded-2xl shadow-lg border border-gray-100 min-w-[200px]">
         <h1 class="text-xl font-bold text-gray-800 mb-1">חוקרים זוויות</h1>
-        <p class="text-sm text-gray-500 mb-2">גררו את הנקודה האדומה לשינוי הזווית</p>
-        <div class="flex items-center gap-2">
-            <span class="font-bold text-blue-600 text-2xl" id="angle-display">45°</span>
-            <span class="px-2 py-1 bg-gray-100 rounded text-sm font-medium text-gray-700" id="type-display">זווית חדה</span>
+        <p class="text-sm text-gray-500 mb-3">גררו את הנקודה האדומה</p>
+        <div class="flex flex-col gap-1">
+            <span class="font-bold text-blue-600 text-3xl" id="angle-display">45°</span>
+            <span class="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-semibold w-fit" id="type-display">זווית חדה</span>
         </div>
     </div>
 
     <!-- Logo PlaceHolder -->
     <img src="logo.png" alt="Amit Logo" id="logo" onerror="this.style.display='none'">
 
-    <!-- Main Canvas Area -->
-    <div class="canvas-container w-full h-full max-w-5xl max-h-[80vh] relative" id="container">
+    <!-- Main Canvas Area - Enlarged and Centered -->
+    <div class="canvas-container w-[95vw] h-[85vh] relative" id="container">
         <canvas id="geometryCanvas"></canvas>
     </div>
 
@@ -78,9 +66,9 @@
         let isDragging = false;
         
         // Configuration
-        const rayLength = 250;
-        const handleRadius = 12; // Radius of the red drag point
-        const arcRadius = 80;    // Radius of the angle arc
+        let rayLength = 250; // Will be dynamic
+        const handleRadius = 14; // Slightly larger for better touch
+        let arcRadius = 100;     // Larger arc
         
         // The angle in radians (starts at 45 degrees)
         let currentAngle = Math.PI / 4; 
@@ -94,15 +82,22 @@
             canvas.style.width = `${width}px`;
             canvas.style.height = `${height}px`;
 
-            // Set center mostly to bottom left, but with padding
-            centerX = width * 0.2; 
-            centerY = height * 0.7;
+            // Center the vertex horizontally and vertically (slightly lower than middle)
+            centerX = width / 2; 
+            centerY = height * 0.6;
+
+            // Adjust ray length based on screen size
+            rayLength = Math.min(width, height) * 0.35;
+            arcRadius = Math.min(width, height) * 0.15;
+            // Min caps for very small screens
+            if (rayLength < 150) rayLength = 150;
+            if (arcRadius < 60) arcRadius = 60;
 
             draw();
         }
 
         function getAngleType(degrees) {
-            // Normalize exactly 360 to 0 for display logic if needed, but usually 360 is full circle
+            // Normalize exactly 360 to 0 for display logic
             if (Math.abs(degrees) < 0.1 || Math.abs(degrees - 360) < 0.1) return "זווית אפס / שלמה";
             if (degrees < 90) return "זווית חדה";
             if (Math.abs(degrees - 90) < 0.1) return "זווית ישרה";
@@ -113,26 +108,20 @@
 
         function drawGrid() {
             ctx.save();
-            ctx.strokeStyle = '#e5e7eb'; // Tailwind gray-200
+            ctx.strokeStyle = '#f0f2f5'; // Very subtle gray
             ctx.lineWidth = 1;
 
-            const gridSize = 40;
+            const gridSize = 50;
             
+            // Draw grid centered on the vertex
             // Vertical lines
-            for (let x = centerX % gridSize; x < width; x += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, height);
-                ctx.stroke();
-            }
+            for (let x = centerX; x < width; x += gridSize) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
+            for (let x = centerX; x > 0; x -= gridSize) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
             
             // Horizontal lines
-            for (let y = centerY % gridSize; y < height; y += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
-                ctx.stroke();
-            }
+            for (let y = centerY; y < height; y += gridSize) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+            for (let y = centerY; y > 0; y -= gridSize) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+
             ctx.restore();
         }
 
@@ -148,21 +137,16 @@
             const endX1 = centerX + rayLength;
             const endY1 = centerY;
 
-            // Moving Ray (Based on angle)
-            // Note: Canvas Y is inverted (down is positive), so we subtract sin for visual "up"
-            // But standard math atan2 handles dragging correctly if we map inputs right.
-            // Let's stick to standard trig: 0 is right. -PI/2 is up.
+            // Moving Ray
             const endX2 = centerX + Math.cos(-currentAngle) * rayLength;
             const endY2 = centerY + Math.sin(-currentAngle) * rayLength;
 
             // 1. Draw Angle Arc (The colored slice)
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
-            // Arc logic: standard canvas arc draws clockwise. 
-            // We want from 0 (fixed ray) to -currentAngle (moving ray).
             ctx.arc(centerX, centerY, arcRadius, 0, -currentAngle, true); 
             ctx.closePath();
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'; // Blue-500 transparent
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.15)'; 
             ctx.fill();
             ctx.strokeStyle = '#3b82f6';
             ctx.lineWidth = 2;
@@ -170,8 +154,8 @@
 
             // 2. Draw Rays
             ctx.lineCap = 'round';
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#1f2937'; // Gray-800
+            ctx.lineWidth = 5; // Thicker lines
+            ctx.strokeStyle = '#1e293b'; // Slate-800
 
             // Fixed Ray
             ctx.beginPath();
@@ -185,28 +169,28 @@
             ctx.lineTo(endX2, endY2);
             ctx.stroke();
 
-            // 3. Draw Vertex Point (The corner)
+            // 3. Draw Vertex Point
             ctx.beginPath();
-            ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
-            ctx.fillStyle = '#111827'; // Dark
+            ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#0f172a'; // Darker
             ctx.fill();
             
             // Vertex Label
-            ctx.fillStyle = '#4b5563';
+            ctx.fillStyle = '#64748b';
             ctx.font = '14px Heebo';
-            ctx.fillText('קודקוד', centerX - 20, centerY + 25);
+            ctx.textAlign = 'center';
+            ctx.fillText('קודקוד', centerX, centerY + 30);
 
 
             // 4. Draw Interactive Handle (The Red Point)
-            // We place the handle slightly closer than full ray length for better UX
-            const handleDist = rayLength * 0.8;
+            const handleDist = rayLength; // Put handle at tip for better leverage
             const handleX = centerX + Math.cos(-currentAngle) * handleDist;
             const handleY = centerY + Math.sin(-currentAngle) * handleDist;
 
-            // Outer glow for handle
+            // Pulse/Glow effect if dragging
             if (isDragging) {
                 ctx.beginPath();
-                ctx.arc(handleX, handleY, handleRadius + 8, 0, Math.PI * 2);
+                ctx.arc(handleX, handleY, handleRadius + 10, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
                 ctx.fill();
             }
@@ -217,28 +201,26 @@
             ctx.fillStyle = '#ef4444'; // Red-500
             ctx.fill();
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.stroke();
             
-            // Cursor hint
             canvas.style.cursor = isDragging ? 'grabbing' : 'default';
 
             // 5. Update DOM Text
             let degrees = (currentAngle * (180 / Math.PI)).toFixed(0);
-            if (degrees < 0) degrees = 360 + parseInt(degrees); // Normalize 0-360
+            if (degrees < 0) degrees = 360 + parseInt(degrees); 
             if (degrees == 360) degrees = 0;
             
             angleDisplay.textContent = `${degrees}°`;
             typeDisplay.textContent = getAngleType(degrees);
             
-            // 6. Draw Degree Text on Canvas (next to arc)
+            // 6. Draw Degree Text on Canvas
             ctx.save();
             ctx.translate(centerX, centerY);
-            // Position text in the middle of the angle bisector
             const bisectorAngle = -currentAngle / 2;
-            const textRadius = arcRadius + 30;
-            ctx.fillStyle = '#374151';
-            ctx.font = 'bold 16px Heebo';
+            const textRadius = arcRadius + 40;
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 20px Heebo'; // Larger font
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(`${degrees}°`, Math.cos(bisectorAngle) * textRadius, Math.sin(bisectorAngle) * textRadius);
@@ -258,46 +240,20 @@
         }
 
         function isNearHandle(x, y) {
-            const handleDist = rayLength * 0.8;
-            // Current handle position
+            const handleDist = rayLength;
             const hx = centerX + Math.cos(-currentAngle) * handleDist;
             const hy = centerY + Math.sin(-currentAngle) * handleDist;
-            
-            // Check distance
             const dx = x - hx;
             const dy = y - hy;
-            // Larger hit area for easier touch
-            return (dx * dx + dy * dy) < (handleRadius * 2.5) ** 2;
+            return (dx * dx + dy * dy) < (handleRadius * 3.5) ** 2; // Generous hit area
         }
 
         function updateAngle(x, y) {
-            // Calculate angle relative to center
             const dx = x - centerX;
-            const dy = y - centerY; // Canvas Y increases downwards
-            
-            // Standard atan2 returns angle from X axis (Right) clockwise is positive in screen coords usually?
-            // Wait, in screen coords: Right=(1,0), Down=(0,1).
-            // atan2(y, x) -> Down is +PI/2.
-            // We want standard math behavior: Counter-Clockwise is positive.
-            // But visually, "Up" is negative Y.
-            
-            // Let's simplify: Get the raw angle from the center
+            const dy = y - centerY;
             let rawAngle = Math.atan2(dy, dx); 
-            
-            // Invert because canvas Y is down, but we treat "up" as positive angle conceptually often
-            // Or simply, we treat dragging "up" from the right axis as positive.
-            // Since y is positive down, moving mouse UP gives negative dy.
-            // atan2(-y, x) gives negative angle for up.
-            
-            // Let's just strictly follow the mouse position visually
-            // If mouse is at (10, -10) [relative to center], that's Top-Right.
-            // atan2(-10, 10) = -PI/4.
-            // We visualize using -currentAngle.
-            // So if mouse gives -PI/4, we want currentAngle to be PI/4.
-            
             currentAngle = -rawAngle;
 
-            // Normalization logic to keep it 0-360 nice behavior
             while (currentAngle < 0) currentAngle += Math.PI * 2;
             while (currentAngle >= Math.PI * 2) currentAngle -= Math.PI * 2;
 
@@ -305,15 +261,12 @@
         }
 
         // Event Listeners
-        
         const startDrag = (e) => {
             const pos = getMousePos(e);
-            // Check if user clicked near the red handle OR the vertex (for convenience)
-            // though prompt specifically said vertex, usually rotating from the arm is better math UX.
-            // We will allow dragging if they click anywhere on the outer 50% of the circle area to be generous
+            // Allow clicking anywhere slightly away from center to start dragging
             const distFromCenter = Math.sqrt((pos.x - centerX)**2 + (pos.y - centerY)**2);
             
-            if (isNearHandle(pos.x, pos.y) || (distFromCenter > 20 && distFromCenter < rayLength + 20)) {
+            if (isNearHandle(pos.x, pos.y) || (distFromCenter > 40)) {
                 isDragging = true;
                 updateAngle(pos.x, pos.y);
             }
@@ -321,13 +274,9 @@
 
         const moveDrag = (e) => {
             if (!isDragging) {
-                // Just for hover cursor update
                 const pos = getMousePos(e);
-                if (isNearHandle(pos.x, pos.y)) {
-                    canvas.style.cursor = 'grab';
-                } else {
-                    canvas.style.cursor = 'default';
-                }
+                if (isNearHandle(pos.x, pos.y)) canvas.style.cursor = 'grab';
+                else canvas.style.cursor = 'default';
                 return;
             }
             e.preventDefault();
@@ -335,27 +284,19 @@
             updateAngle(pos.x, pos.y);
         };
 
-        const endDrag = () => {
-            isDragging = false;
-        };
+        const endDrag = () => { isDragging = false; };
 
-        // Mouse
         canvas.addEventListener('mousedown', startDrag);
         window.addEventListener('mousemove', moveDrag);
         window.addEventListener('mouseup', endDrag);
 
-        // Touch
         canvas.addEventListener('touchstart', (e) => { startDrag(e); }, {passive: false});
         window.addEventListener('touchmove', (e) => { if(isDragging) moveDrag(e); }, {passive: false});
         window.addEventListener('touchend', endDrag);
 
-        // Init
         window.addEventListener('resize', resize);
         
-        // Wait for fonts to load for better canvas text rendering
-        document.fonts.ready.then(() => {
-            resize();
-        });
+        document.fonts.ready.then(() => { resize(); });
         
     </script>
 </body>
