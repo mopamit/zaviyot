@@ -95,6 +95,7 @@
             stroke-width: 2;
             stroke-dasharray: 5,5;
             pointer-events: none;
+            transition: d 0.2s ease;
         }
 
         .center-pin {
@@ -140,6 +141,15 @@
             border-radius: 4px;
         }
 
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+        
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -204,7 +214,7 @@
         <!-- EXPLORATION MODE CONTROLS -->
         <div id="exploration-controls" class="space-y-6">
             <!-- Dynamic Data Display -->
-            <div class="bg-indigo-50 rounded-xl p-4 text-center border border-indigo-100">
+            <div class="bg-indigo-50 rounded-xl p-4 text-center border border-indigo-100 relative">
                 <div class="text-sm text-indigo-400 font-bold tracking-wide uppercase mb-1">נתוני הזווית</div>
                 <div class="flex items-end justify-center gap-2">
                     <span id="display-degrees" class="text-4xl font-bold text-indigo-700">90°</span>
@@ -212,9 +222,37 @@
                 </div>
             </div>
 
+            <!-- Reflex Toggle -->
+            <div class="flex items-center justify-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <span class="text-slate-600 font-medium text-sm">הצג זווית נישאה (חיצונית)</span>
+                <label for="reflex-toggle" class="flex items-center cursor-pointer relative">
+                    <input type="checkbox" id="reflex-toggle" class="sr-only" onchange="updateExplorationFromState()">
+                    <div class="w-11 h-6 bg-slate-200 rounded-full border border-slate-300 transition-colors duration-200 ease-in-out"></div>
+                    <div class="w-5 h-5 bg-white rounded-full shadow absolute left-0.5 top-0.5 transition-transform duration-200 ease-in-out transform translate-x-0" id="toggle-circle"></div>
+                </label>
+            </div>
+            
+            <script>
+                // Simple script to handle toggle visuals
+                document.getElementById('reflex-toggle').addEventListener('change', function() {
+                    const circle = document.getElementById('toggle-circle');
+                    const bg = this.nextElementSibling;
+                    if(this.checked) {
+                        circle.style.transform = 'translateX(20px)';
+                        bg.classList.remove('bg-slate-200');
+                        bg.classList.add('bg-indigo-500');
+                    } else {
+                        circle.style.transform = 'translateX(0)';
+                        bg.classList.add('bg-slate-200');
+                        bg.classList.remove('bg-indigo-500');
+                    }
+                });
+            </script>
+
             <!-- Slider -->
             <div class="px-2">
-                <input type="range" id="time-slider" min="0" max="720" value="180" class="w-full" oninput="updateExploration(this.value)">
+                <!-- Changed step to 0.1 for smooth dragging -->
+                <input type="range" id="time-slider" min="0" max="720" value="180" step="0.1" class="w-full" oninput="updateExploration(this.value)">
                 <div class="flex justify-between text-xs text-slate-400 mt-2">
                     <span>12:00</span>
                     <span>3:00</span>
@@ -237,8 +275,8 @@
                 <span class="text-slate-400 text-sm">איזו זווית מופיעה בשעון?</span>
             </div>
 
-            <!-- Answer Buttons -->
-            <div class="grid grid-cols-3 gap-3 mb-6">
+            <!-- Answer Buttons Grid 2x2 -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
                 <button onclick="submitAnswer('acute')" class="btn-action bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-4 rounded-2xl font-bold text-lg shadow-sm">
                     זווית חדה
                     <div class="text-xs font-normal opacity-75 mt-1">קטנה מ-90°</div>
@@ -250,6 +288,10 @@
                 <button onclick="submitAnswer('obtuse')" class="btn-action bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 py-4 rounded-2xl font-bold text-lg shadow-sm">
                     זווית קהה
                     <div class="text-xs font-normal opacity-75 mt-1">גדולה מ-90°</div>
+                </button>
+                <button onclick="submitAnswer('reflex')" class="btn-action bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 py-4 rounded-2xl font-bold text-lg shadow-sm">
+                    זווית נישאה
+                    <div class="text-xs font-normal opacity-75 mt-1">גדולה מ-180°</div>
                 </button>
             </div>
 
@@ -281,7 +323,7 @@
     <div class="fixed top-40 right-10 w-32 h-32 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style="animation-delay: 2s"></div>
     <div class="fixed -bottom-8 left-20 w-32 h-32 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style="animation-delay: 4s"></div>
 
-    <!-- Extra Quiz Modal (Same as before) -->
+    <!-- Extra Quiz Modal -->
     <div id="quiz-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-opacity opacity-0">
         <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="quiz-content">
             <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
@@ -301,11 +343,11 @@
                 </div>
                 <!-- Question 2 -->
                 <div class="quiz-item">
-                    <p class="font-bold text-lg text-slate-800 mb-3">2. מה מאפיין זווית ישרה?</p>
+                    <p class="font-bold text-lg text-slate-800 mb-3">2. מה מאפיין זווית נישאה?</p>
                     <div class="space-y-2">
-                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, true)"><span class="mr-3">היא שווה בדיוק ל-90 מעלות</span></label>
-                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, false)"><span class="mr-3">היא קטנה מ-90 מעלות</span></label>
-                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, false)"><span class="mr-3">היא גדולה מ-180</span></label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, false)"><span class="mr-3">היא קטנה מ-180 מעלות</span></label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, true)"><span class="mr-3">היא גדולה מ-180 מעלות</span></label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition"><input type="radio" name="q2" class="w-5 h-5 text-indigo-600" onclick="checkQuiz(this, false)"><span class="mr-3">היא שווה בדיוק ל-90 מעלות</span></label>
                     </div>
                     <div class="quiz-feedback mt-2 text-sm font-bold min-h-[20px]"></div>
                 </div>
@@ -368,20 +410,17 @@
             const handleStart = (e) => {
                 if (!isExploration) return;
                 isDragging = true;
-                // Disable smooth transition while dragging for instant feedback
                 document.querySelectorAll('.hand').forEach(el => {
                     el.classList.remove('hand-smooth');
                     el.classList.add('hand-no-transition');
                 });
                 document.getElementById('angle-arc').style.transition = 'none';
-                handleMove(e); // Update immediately on click
+                handleMove(e);
             };
 
             const handleMove = (e) => {
                 if (!isDragging || !isExploration) return;
                 e.preventDefault();
-
-                // Get coordinates relative to SVG center (150, 150)
                 const rect = container.getBoundingClientRect();
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -389,46 +428,29 @@
                 const x = clientX - rect.left - (rect.width / 2);
                 const y = clientY - rect.top - (rect.height / 2);
 
-                // Calculate angle in degrees (0 is 12 o'clock, clockwise)
-                // Math.atan2(y, x) gives angle from X axis (3 o'clock)
-                // We want 12 o'clock to be 0
                 let angle = Math.atan2(y, x) * (180 / Math.PI);
-                angle += 90; // Rotate so -90 (12 o'clock) becomes 0
+                angle += 90;
                 if (angle < 0) angle += 360;
 
-                // Angle (0-360) maps to minutes (0-60)
-                // We need to sync this with the slider which handles total minutes (0-720)
-                // We will determine the closest "total minutes" based on current slider value
-                
-                const currentTotal = parseInt(document.getElementById('time-slider').value);
-                const currentHour = Math.floor(currentTotal / 60);
-                
-                // Calculate target minutes for this hour
-                let targetMinute = (angle / 6); // 360deg = 60min
-                
-                // Heuristic to handle 12-crossing (dragging past 12)
-                // Compare new minutes to old minutes (modulo 60)
+                // Use parseFloat for smooth transition
+                const currentTotal = parseFloat(document.getElementById('time-slider').value);
+                let targetMinute = (angle / 6); 
                 const oldMinute = currentTotal % 60;
                 let diff = targetMinute - oldMinute;
                 
-                // If jump is huge, we probably crossed 12
                 if (diff > 30) diff -= 60;
                 if (diff < -30) diff += 60;
                 
                 let newTotal = currentTotal + diff;
-                
-                // Clamp to slider bounds or wrap
                 if (newTotal < 0) newTotal = 0; 
-                if (newTotal > 720) newTotal = 720; // Soft limit or wrap? 720 is nice limit.
+                if (newTotal > 720) newTotal = 720;
 
-                // Update Slider
                 document.getElementById('time-slider').value = newTotal;
                 updateExploration(newTotal);
             };
 
             const handleEnd = () => {
                 isDragging = false;
-                // Re-enable smooth transition
                 document.querySelectorAll('.hand').forEach(el => {
                     el.classList.remove('hand-no-transition');
                     el.classList.add('hand-smooth');
@@ -445,28 +467,51 @@
             window.addEventListener('touchend', handleEnd);
         }
 
-
         /* --- EXPLORATION LOGIC --- */
+        function updateExplorationFromState() {
+            const val = document.getElementById('time-slider').value;
+            updateExploration(val);
+        }
+
         function updateExploration(minutesInput) {
-            const totalMinutes = parseInt(minutesInput);
+            let totalMinutes = parseFloat(minutesInput);
+            const showReflex = document.getElementById('reflex-toggle').checked;
             
-            // Calculate Hands
-            // Hour hand: 0.5 deg per minute
-            // Minute hand: 6 deg per minute of the hour (totalMinutes % 60)
             const hourDeg = totalMinutes * 0.5;
             const minuteDeg = totalMinutes * 6;
 
-            updateClockVisuals(hourDeg, minuteDeg);
-
-            // Calculate Angle for Display
-            // Normalize to 0-360
+            // Calculate basic difference (0-180)
             let h = hourDeg % 360;
             let m = minuteDeg % 360;
             let diff = Math.abs(h - m);
             if (diff > 180) diff = 360 - diff;
+
+            // --- MAGNETISM / SNAPPING LOGIC ---
+            // Snap to 90, 180, 0 if close
+            const snapThreshold = 1.5; 
+            if (Math.abs(diff - 90) < snapThreshold) {
+                diff = 90;
+            } else if (Math.abs(diff - 180) < snapThreshold) {
+                diff = 180;
+            } else if (Math.abs(diff) < snapThreshold) {
+                diff = 0;
+            }
             
-            const degrees = Math.round(diff);
+            // If showing reflex, we invert the angle
+            let finalDegrees = diff;
+            let isReflex = false;
+
+            if (showReflex && diff < 180 && diff > 0) {
+                finalDegrees = 360 - diff;
+                isReflex = true;
+            } else if (!showReflex) {
+                isReflex = false;
+            }
+
+            const degrees = Math.round(finalDegrees);
             
+            updateClockVisuals(hourDeg, minuteDeg, isReflex);
+
             // Update Text
             const degreeEl = document.getElementById('display-degrees');
             const typeEl = document.getElementById('display-type');
@@ -476,7 +521,7 @@
             if (degrees === 90) {
                 typeEl.textContent = "- זווית ישרה";
                 typeEl.className = "text-xl font-medium text-indigo-600 pb-1";
-            } else if (degrees < 90) {
+            } else if (degrees < 90 && degrees > 0) {
                 typeEl.textContent = "- זווית חדה";
                 typeEl.className = "text-xl font-medium text-emerald-600 pb-1";
             } else if (degrees > 90 && degrees < 180) {
@@ -485,6 +530,12 @@
             } else if (degrees === 180) {
                 typeEl.textContent = "- זווית שטוחה";
                 typeEl.className = "text-xl font-medium text-slate-600 pb-1";
+            } else if (degrees > 180) {
+                typeEl.textContent = "- זווית נישאה";
+                typeEl.className = "text-xl font-medium text-orange-600 pb-1";
+            } else if (degrees === 0 || degrees === 360) {
+                 typeEl.textContent = "- זווית מלאה/אפס";
+                 typeEl.className = "text-xl font-medium text-slate-600 pb-1";
             } else {
                  typeEl.textContent = "";
             }
@@ -500,7 +551,6 @@
             document.getElementById('mode-title').textContent = "בחן את עצמך";
             document.getElementById('mode-desc').textContent = "הביטו בשעון ובחרו את סוג הזווית הנכון";
             
-            // Smoother hand transition for quiz
             document.querySelectorAll('.hand').forEach(el => {
                 el.classList.remove('hand-no-transition');
                 el.classList.add('hand-smooth');
@@ -520,34 +570,33 @@
             document.getElementById('mode-title').textContent = "סוגי זוויות";
             document.getElementById('mode-desc').textContent = "גררו את המחוג או הזיזו את הסמן כדי לשנות את הזווית";
 
-            // Faster transition for slider/drag
             document.querySelectorAll('.hand').forEach(el => {
                 el.style.transition = ""; 
                 el.classList.add('hand-smooth');
             });
             document.getElementById('angle-arc').style.transition = "d 0.1s linear";
 
-            // Reset slider val
-            const val = document.getElementById('time-slider').value;
-            updateExploration(val);
+            // Reset visual to exploration state
+            updateExplorationFromState();
         }
 
         function initLevel() {
             if (isExploration) return;
             isLocked = false;
             
-            // Generate Random Pedagogical Time
             let hour, minute, angleDeg;
             let type = Math.random(); 
+            let isReflex = false;
 
-            if (type < 0.3) { // Right Angle
+            // Chances: 0-0.2 Right, 0.2-0.5 Acute, 0.5-0.8 Obtuse, 0.8-1.0 Reflex
+            if (type < 0.2) { // Right Angle
                 const options = [[3,0], [9,0], [3, 0], [9, 0]]; 
                 const pick = options[Math.floor(Math.random() * options.length)];
                 hour = pick[0];
                 minute = pick[1];
                 currentQuizAnswer = 'right';
             } 
-            else if (type < 0.65) { // Acute
+            else if (type < 0.5) { // Acute
                 do {
                     hour = Math.floor(Math.random() * 12);
                     minute = Math.floor(Math.random() * 12) * 5;
@@ -555,7 +604,7 @@
                 } while (angleDeg >= 85 || angleDeg < 20); 
                 currentQuizAnswer = 'acute';
             } 
-            else { // Obtuse
+            else if (type < 0.8) { // Obtuse
                 do {
                     hour = Math.floor(Math.random() * 12);
                     minute = Math.floor(Math.random() * 12) * 5;
@@ -563,17 +612,26 @@
                 } while (angleDeg <= 95 || angleDeg > 170); 
                 currentQuizAnswer = 'obtuse';
             }
+            else { // Reflex
+                 do {
+                    hour = Math.floor(Math.random() * 12);
+                    minute = Math.floor(Math.random() * 12) * 5;
+                    // For reflex, we just need any valid time, we will invert the display
+                    angleDeg = calculateAngleFromTime(hour, minute);
+                } while (angleDeg < 20 || angleDeg > 160); // Avoid straight/zero
+                currentQuizAnswer = 'reflex';
+                isReflex = true;
+            }
 
-            // Update Time Text
             const displayHour = hour === 0 ? 12 : hour;
             const displayMinute = minute < 10 ? '0' + minute : minute;
             const timeText = `${displayHour}:${displayMinute}`;
             document.getElementById('feedback-area').innerHTML = 
-                `<span class="text-slate-600 text-lg">השעה <span class="font-bold text-indigo-600" style="font-family: monospace; font-size: 1.2em;">${timeText}</span>, סמנו את הזווית המתאימה</span>`;
+                `<span class="text-slate-600 text-lg">השעה <span class="font-bold text-indigo-600" style="font-family: monospace; font-size: 1.2em;">${timeText}</span>, סמנו את הזווית המתאימה (לפי הקשת)</span>`;
 
             const hAngle = (hour % 12) * 30 + minute * 0.5;
             const mAngle = minute * 6;
-            updateClockVisuals(hAngle, mAngle);
+            updateClockVisuals(hAngle, mAngle, isReflex);
         }
 
         function calculateAngleFromTime(h, m) {
@@ -584,14 +642,13 @@
             return diff;
         }
 
-        function updateClockVisuals(hAngle, mAngle) {
+        function updateClockVisuals(hAngle, mAngle, isReflex = false) {
             document.getElementById('hour-hand').style.transform = `rotate(${hAngle}deg)`;
             document.getElementById('minute-hand').style.transform = `rotate(${mAngle}deg)`;
-            drawAngleArc(hAngle, mAngle);
+            drawAngleArc(hAngle, mAngle, isReflex);
         }
 
-        function drawAngleArc(hDeg, mDeg) {
-            // Normalize angles to 0-360
+        function drawAngleArc(hDeg, mDeg, isReflex) {
             let h = hDeg % 360;
             let m = mDeg % 360;
             if (h < 0) h += 360;
@@ -601,22 +658,42 @@
             let end = Math.max(h, m);
             let diff = end - start;
             
+            // Logic to choose which arc to draw
+            // Standard behavior: draw smallest arc (<=180)
+            // Reflex behavior: draw largest arc (>180)
+            
+            let useLargeArc = false;
             let finalStart, finalEnd;
 
-            // We always want to draw the smaller angle (<= 180)
             if (diff <= 180) {
-                // Draw clockwise from start to end
-                finalStart = start;
-                finalEnd = end;
+                // Short path is "start to end" clockwise
+                if (isReflex) {
+                     // We want the LONG path (reflex)
+                     // So we go from End to Start (clockwise crossing 0)
+                     finalStart = end;
+                     finalEnd = start;
+                     useLargeArc = true; 
+                } else {
+                     // We want short path
+                     finalStart = start;
+                     finalEnd = end;
+                }
             } else {
-                // The shorter path crosses the 0/360 boundary
-                // Draw clockwise from end to start
-                finalStart = end;
-                finalEnd = start;
+                // Short path is "end to start" clockwise (crossing 0)
+                if (isReflex) {
+                    // We want LONG path
+                    // So we go from Start to End (clockwise not crossing 0)
+                    finalStart = start;
+                    finalEnd = end;
+                    useLargeArc = true;
+                } else {
+                    // We want short path
+                    finalStart = end;
+                    finalEnd = start;
+                }
             }
 
             const r = 50, cx = 150, cy = 150;
-            // Subtract 90 to convert clock-deg (0 at top) to trig-deg (0 at right)
             const startRad = (finalStart - 90) * Math.PI / 180;
             const endRad = (finalEnd - 90) * Math.PI / 180;
 
@@ -624,9 +701,21 @@
             const y1 = cy + r * Math.sin(startRad);
             const x2 = cx + r * Math.cos(endRad);
             const y2 = cy + r * Math.sin(endRad);
+            
+            // large-arc-flag: 0 for small, 1 for large. 
+            // In SVG arc: A rx ry rot large-arc-flag sweep-flag x y
+            // We always sweep clockwise (flag 1). 
+            // The large-arc-flag decides if we take the >180 path.
+            
+            // Let's simplify. We just draw from `finalStart` to `finalEnd` always Clockwise.
+            // We need to calculate if the sweep is > 180 to set the flag.
+            
+            let sweep = finalEnd - finalStart;
+            if (sweep < 0) sweep += 360;
+            
+            const largeArcFlag = sweep > 180 ? 1 : 0;
 
-            // Sweep flag is 1 (clockwise)
-            const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+            const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
             document.getElementById('angle-arc').setAttribute('d', path);
         }
 
