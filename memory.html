@@ -150,7 +150,8 @@
             transform: rotateY(180deg);
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.5s 0.5s, transform 0.6s; 
+            /* הסרתי את ההשהיה כאן כי היא כעת מטופלת ב-JS */
+            transition: opacity 0.5s, transform 0.6s; 
         }
 
         .card-face {
@@ -511,6 +512,9 @@
         }
 
         function disableCards() {
+            // נעילת הלוח כדי לאפשר קריאה בנחת
+            lockBoard = true;
+            
             matchesFound++;
             score += levels[currentLevel].scorePerMatch;
             scoreEl.innerText = score;
@@ -518,15 +522,18 @@
             scoreEl.style.transform = "scale(1.5)";
             setTimeout(() => scoreEl.style.transform = "scale(1)", 200);
 
-            firstCard.classList.add('matched');
-            secondCard.classList.add('matched');
+            // השהיה של 2 שניות לקריאה לפני העלמת הקלפים
+            setTimeout(() => {
+                firstCard.classList.add('matched');
+                secondCard.classList.add('matched');
 
-            resetBoard();
+                resetBoard(); // שחרור הנעילה
 
-            // בדיקת ניצחון לפי כמות הזוגות ברמה הנוכחית
-            if (matchesFound === currentPairsCount) {
-                setTimeout(() => endGame(true), 500);
-            }
+                // בדיקת ניצחון לפי כמות הזוגות ברמה הנוכחית
+                if (matchesFound === currentPairsCount) {
+                    setTimeout(() => endGame(true), 500);
+                }
+            }, 2000);
         }
 
         function unflipCards() {
