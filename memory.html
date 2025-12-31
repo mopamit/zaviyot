@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק זיכרון - זוויות</title>
+    <!-- שימוש בפונט נעים לקריאה -->
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --accent: #f1c40f;
+            --danger: #e74c3c;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: #f0f3f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        /* לוגו בצד ימין למעלה */
+        .logo-container {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .logo-container img {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #7f8c8d;
+        }
+
+        /* סרגל שליטה ונתונים */
+        .game-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .stat-box {
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            margin-left: 8px;
+            color: #7f8c8d;
+        }
+
+        .stat-value {
+            color: var(--primary);
+            min-width: 40px;
+        }
+
+        /* בחירת רמה */
+        .level-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .level-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.3s;
+            opacity: 0.7;
+        }
+
+        .level-btn:hover { opacity: 1; transform: translateY(-2px); }
+        .level-btn.active { opacity: 1; box-shadow: 0 0 10px rgba(0,0,0,0.2); transform: scale(1.05); }
+
+        .btn-easy { background-color: var(--secondary); color: white; }
+        .btn-medium { background-color: var(--accent); color: var(--dark); }
+        .btn-hard { background-color: var(--danger); color: white; }
+
+        /* לוח המשחק */
+        .game-grid {
+            display: grid;
+            gap: 15px;
+            width: 100%;
+            max-width: 900px;
+            perspective: 1000px;
+            /* ברירת מחדל, תתעדכן ב-JS */
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        @media (max-width: 800px) {
+            /* במובייל תמיד 2 עמודות */
+            .game-grid { grid-template-columns: repeat(2, 1fr) !important; }
+            .logo-container { position: static; margin-bottom: 10px; }
+            h1 { font-size: 2rem; }
+        }
+
+        /* עיצוב הקלף */
+        .card {
+            background-color: transparent;
+            height: 180px;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            transform: rotateY(180deg);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s 0.5s, transform 0.6s; 
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 2px solid white;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+            color: white;
+            font-size: 3rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-front::after {
+            content: "?";
+        }
+
+        .card-back {
+            background-color: white;
+            transform: rotateY(180deg);
+            border: 2px solid var(--primary);
+        }
+
+        .card-content h3 {
+            margin: 5px 0;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .card-content p {
+            font-size: 0.85rem;
+            margin: 5px 0;
+            color: #555;
+            line-height: 1.3;
+        }
+
+        .card-content .example {
+            font-size: 0.75rem;
+            color: #888;
+            font-style: italic;
+        }
+
+        /* SVG ציורי הזוויות */
+        .angle-svg {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 5px;
+        }
+        .angle-path { stroke: var(--danger); stroke-width: 3; fill: none; stroke-linecap: round; }
+        .angle-arc { stroke: var(--secondary); stroke-width: 2; fill: rgba(46, 204, 113, 0.2); stroke-dasharray: 4; }
+        .angle-text { font-size: 12px; fill: var(--dark); font-weight: bold; }
+
+        /* מודל סיום */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s;
+        }
+
+        .modal h2 { margin-top: 0; font-size: 2rem; }
+        .modal-score { font-size: 1.5rem; color: var(--primary); margin: 20px 0; font-weight: bold; }
+        
+        .restart-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .restart-btn:hover { transform: scale(1.05); background: #2980b9; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); } to { transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <!-- לוגו -->
+    <div class="logo-container">
+        <img src="logo.png" alt="לוגו" onerror="this.style.display='none'">
+    </div>
+
+    <h1>משחק הזכרון: זוויות</h1>
+    <div class="subtitle">התאימו בין שם הזווית לבין התיאור והצורה שלה</div>
+
+    <!-- בחירת רמה -->
+    <div class="level-selector">
+        <button class="level-btn btn-easy" onclick="setDifficulty('easy')">קל</button>
+        <button class="level-btn btn-medium active" onclick="setDifficulty('medium')">בינוני</button>
+        <button class="level-btn btn-hard" onclick="setDifficulty('hard')">קשה</button>
+    </div>
+
+    <!-- נתונים -->
+    <div class="game-bar">
+        <div class="stat-box">
+            <span class="stat-label">זמן:</span>
+            <span class="stat-value" id="timer">00</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">ניקוד:</span>
+            <span class="stat-value" id="score">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">רמה:</span>
+            <span class="stat-value" id="level-display">בינוני</span>
+        </div>
+    </div>
+
+    <!-- לוח המשחק -->
+    <div class="game-grid" id="grid"></div>
+
+    <!-- מודל סיום -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2 id="modal-title"></h2>
+            <div id="modal-msg"></div>
+            <div class="modal-score">ניקוד סופי: <span id="final-score">0</span></div>
+            <button class="restart-btn" onclick="initGame()">שחקו שוב 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // נתונים
+        const anglesData = [
+            {
+                id: 'acute',
+                name: 'זווית חדה',
+                desc: 'זווית קטנה מ-90°',
+                example: 'דוגמה: חוד של משולש',
+                svg: `<svg class="angle-svg" viewBox="0 0 100 100"><path class="angle-path" d="M80 80 L20 80 L60 20" /><path class="angle-arc" d="M35 80 A 15 15 0 0 1 45 70" /></svg>`
+            },
+            {
+                id: 'right',
+                name: 'זווית ישרה',
+                desc: 'זווית בגודל בדיוק 90°',
+                example: 'דוגמה: פינה של שולחן',
+                svg: `<svg class="angle-svg" viewBox="0 0 100 100"><path class="angle-path" d="M20 20 L20 80 L80 80" /><path class="angle-arc" d="M20 60 L40 60 L40 80" style="stroke-dasharray:0;" /></svg>`
+            },
+            {
+                id: 'obtuse',
+                name: 'זווית קהה',
+                desc: 'גדולה מ-90° וקטנה מ-180°',
+                example: 'דוגמה: דלת פתוחה לרווחה',
+                svg: `<svg class="angle-svg" viewBox="0 0 100 100"><path class="angle-path" d="M10 30 L50 80 L90 80" /><path class="angle-arc" d="M40 80 A 20 20 0 0 0 70 70" /></svg>`
+            },
+            {
+                id: 'straight',
+                name: 'זווית שטוחה',
+                desc: 'זווית בגודל 180° (קו ישר)',
+                example: 'דוגמה: ספר פתוח לגמרי',
+                svg: `<svg class="angle-svg" viewBox="0 0 100 100"><path class="angle-path" d="M10 50 L90 50" /><path class="angle-arc" d="M30 50 A 20 20 0 0 1 70 50" /><circle cx="50" cy="50" r="3" fill="black"/></svg>`
+            },
+            {
+                id: 'full',
+                name: 'זווית מלאה',
+                desc: 'זווית של 360°, סיבוב שלם',
+                example: 'דוגמה: סיבוב מלא של מחוג',
+                svg: `<svg class="angle-svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="black"/><path class="angle-path" d="M50 50 L90 50" /><path class="angle-arc" d="M80 50 A 30 30 0 1 1 79 47" style="stroke-dasharray:2;"/></svg>`
+            }
+        ];
+
+        // הגדרות משחק - עדכון מספר זוגות לפי רמה
+        const levels = {
+            easy: { 
+                time: 60, 
+                scorePerMatch: 10, 
+                label: "קל", 
+                pairs: 3, // רק 3 סוגי זוויות בסיסיות
+                cols: 3
+            },
+            medium: { 
+                time: 60, 
+                scorePerMatch: 20, 
+                label: "בינוני", 
+                pairs: 4, // 4 סוגים
+                cols: 4
+            },
+            hard: { 
+                time: 40, 
+                scorePerMatch: 30, 
+                label: "קשה", 
+                pairs: 5, // כל 5 הסוגים
+                cols: 5
+            }
+        };
+
+        let currentLevel = 'medium';
+        let cards = [];
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let score = 0;
+        let timeLeft = 0;
+        let timerInterval;
+        let matchesFound = 0;
+        let currentPairsCount = 0;
+
+        // אלמנטים ב-DOM
+        const grid = document.getElementById('grid');
+        const timerEl = document.getElementById('timer');
+        const scoreEl = document.getElementById('score');
+        const levelDisplay = document.getElementById('level-display');
+        const modal = document.getElementById('modal');
+
+        function setDifficulty(level) {
+            currentLevel = level;
+            // עדכון כפתורים
+            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.btn-${level}`).classList.add('active');
+            levelDisplay.innerText = levels[level].label;
+            initGame();
+        }
+
+        function initGame() {
+            // הגדרות הרמה הנוכחית
+            const levelSettings = levels[currentLevel];
+            
+            // איפוס
+            score = 0;
+            matchesFound = 0;
+            timeLeft = levelSettings.time;
+            currentPairsCount = levelSettings.pairs;
+            
+            scoreEl.innerText = score;
+            timerEl.innerText = timeLeft;
+            modal.style.display = 'none';
+            grid.innerHTML = '';
+            clearInterval(timerInterval);
+
+            // עדכון הגריד (מספר עמודות) במסכים גדולים
+            if (window.innerWidth > 800) {
+                grid.style.gridTemplateColumns = `repeat(${levelSettings.cols}, 1fr)`;
+            }
+
+            // סינון הנתונים לפי הרמה (למשל בקל לוקחים רק את 3 הראשונים)
+            const gameData = anglesData.slice(0, currentPairsCount);
+            
+            // יצירת חפיסה
+            let deck = [];
+            gameData.forEach(angle => {
+                // קלף סוג א: שם בלבד
+                deck.push({
+                    type: 'name',
+                    id: angle.id,
+                    content: `<h3>${angle.name}</h3>`
+                });
+                // קלף סוג ב: תמונה + הסבר
+                deck.push({
+                    type: 'desc',
+                    id: angle.id,
+                    content: `${angle.svg}<p><strong>${angle.desc}</strong></p><p class="example">${angle.example}</p>`
+                });
+            });
+
+            // ערבוב החפיסה (מתבצע מחדש בכל אתחול משחק)
+            deck.sort(() => 0.5 - Math.random());
+
+            // יצירת HTML
+            deck.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.id = item.id;
+
+                const front = document.createElement('div');
+                front.classList.add('card-face', 'card-front');
+                
+                const back = document.createElement('div');
+                back.classList.add('card-face', 'card-back');
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('card-content');
+                contentDiv.innerHTML = item.content;
+                
+                back.appendChild(contentDiv);
+                card.appendChild(front);
+                card.appendChild(back);
+
+                card.addEventListener('click', flipCard);
+                grid.appendChild(card);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                
+                if(timeLeft <= 10) timerEl.style.color = 'red';
+                else timerEl.style.color = 'var(--primary)';
+
+                if (timeLeft <= 0) {
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flipped');
+
+            if (!hasFlippedCard) {
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.id === secondCard.dataset.id;
+
+            if (isMatch) {
+                disableCards();
+            } else {
+                unflipCards();
+            }
+        }
+
+        function disableCards() {
+            matchesFound++;
+            score += levels[currentLevel].scorePerMatch;
+            scoreEl.innerText = score;
+            
+            scoreEl.style.transform = "scale(1.5)";
+            setTimeout(() => scoreEl.style.transform = "scale(1)", 200);
+
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+
+            resetBoard();
+
+            // בדיקת ניצחון לפי כמות הזוגות ברמה הנוכחית
+            if (matchesFound === currentPairsCount) {
+                setTimeout(() => endGame(true), 500);
+            }
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                resetBoard();
+            }, 1200);
+        }
+
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+
+        function endGame(isWin) {
+            clearInterval(timerInterval);
+            const modalTitle = document.getElementById('modal-title');
+            const modalMsg = document.getElementById('modal-msg');
+            
+            modal.style.display = 'flex';
+            document.getElementById('final-score').innerText = score;
+
+            if (isWin) {
+                const timeBonus = timeLeft * 2;
+                score += timeBonus;
+                document.getElementById('final-score').innerText = score;
+
+                modalTitle.innerText = "כל הכבוד! 🎉";
+                modalTitle.style.color = "var(--secondary)";
+                modalMsg.innerHTML = `<p>סיימתם בהצלחה את שלב ה${levels[currentLevel].label}!</p><p>בונוס זמן: ${timeBonus} נקודות.</p><h3>אתם אלופים בזוויות!</h3>`;
+            } else {
+                modalTitle.innerText = "נגמר הזמן... ⏰";
+                modalTitle.style.color = "var(--danger)";
+                modalMsg.innerHTML = `<p>הייתם קרובים!</p><p>נסו שוב את שלב ה${levels[currentLevel].label}.</p>`;
+            }
+        }
+
+        // האזנה לשינוי גודל מסך לתיקון הגריד
+        window.addEventListener('resize', () => {
+             const levelSettings = levels[currentLevel];
+             if (window.innerWidth > 800) {
+                grid.style.gridTemplateColumns = `repeat(${levelSettings.cols}, 1fr)`;
+            } else {
+                grid.style.gridTemplateColumns = `repeat(2, 1fr)`;
+            }
+        });
+
+        // התחלה
+        initGame();
+
+    </script>
+</body>
+</html>
