@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>חידון זיהוי חוצה זווית - 72°</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        canvas {
+            border: 1px solid #e0e0e0;
+            background-color: #ffffff;
+            cursor: pointer;
+            touch-action: none; /* מונע גלילה בזמן גרירה במובייל */
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+    </style>
+</head>
+<body data-testim-main-word-scripts-loaded="true">
+    <canvas id="angleCanvas" width="600" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById('angleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // הגדרת צבעים
+        const gridColor = 'rgba(200, 200, 200, 0.3)';
+        const rayColor = '#E74C3C';          // צבע הקרן הנגררת (אדום)
+        const fixedElementColor = '#34495E'; // צבע אלמנטים קבועים (כחול-אפור כהה)
+        const innerRayColor = '#7F8C8D';     // צבע הקרניים הפנימיות (אפור)
+        const arcFillColor = 'rgba(52, 152, 219, 0.3)';   // צבע מילוי הקשת
+        const arcStrokeColor = '#5DADE2';    // קו מתאר לקשת
+        const measurementColor = '#E67E22';  // צבע לטקסט המידות (כתום)
+        const labelColor = '#2C3E50';        // צבע לאותיות הקודקודים
+
+        // הגדרות הזווית והנקודות (חידון 72 מעלות)
+        const config = {
+            totalAngle: 72,
+            vertexLabel: "A",
+            startRayLabel: "C",  // קרן תחתונה/אופקית ב-0°
+            endRayLabel: "B",    // קרן ב-72°
+            fixedRays: [
+                { angle: 20, label: "F" },
+                { angle: 36, label: "E" },  // התשובה הנכונה (חוצה זווית)
+                { angle: 45, label: "D" }
+            ]
+        };
+
+        // מיקומים וגדלים על הקנבס
+        const Vertex = { x: 150, y: 110 }; // מיקום קודקוד A מותאם למרכז המסך
+        const rayLength = 300;
+        const arcRadius = 120;
+        
+        // מצב נוכחי
+        let currentAngle = 45; // מתחיל בנקודה D כפי שביקשת
+        let isDragging = false;
+
+        // פונקציות עזר מתמטיות
+        const toRadians = (deg) => deg * Math.PI / 180;
+        const toDegrees = (rad) => rad * 180 / Math.PI;
+
+        // ציור רשת הרקע
+        function drawGrid() {
+            ctx.save();
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += 20) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += 20) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // פונקציית הציור הראשית
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            // 1. ציור מילוי הקשת (0 עד 72)
+            ctx.save();
+            ctx.fillStyle = arcFillColor;
+            ctx.beginPath();
+            ctx.moveTo(Vertex.x, Vertex.y);
+            ctx.arc(Vertex.x, Vertex.y, arcRadius, 0, toRadians(config.totalAngle));
+            ctx.closePath();
+            ctx.fill();
+
+            // 2. ציור קו המתאר של הקשת
+            ctx.strokeStyle = arcStrokeColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(Vertex.x, Vertex.y, arcRadius, 0, toRadians(config.totalAngle));
+            ctx.stroke();
+            ctx.restore();
+
+            // 3. ציור הקרניים הראשיות הקבועות (AC ו-AB)
+            // קרן AC (0 מעלות - אופקית ימינה)
+            drawRay(Vertex.x, Vertex.y, 0, rayLength, fixedElementColor, 3);
+            drawPoint(Vertex.x + rayLength, Vertex.y, fixedElementColor, 5);
+            drawLabel(Vertex.x + rayLength + 20, Vertex.y, config.startRayLabel, labelColor, 20);
+
+            // קרן AB (72 מעלות - למטה וימינה)
+            drawRay(Vertex.x, Vertex.y, config.totalAngle, rayLength, fixedElementColor, 3);
+            const bx = Vertex.x + rayLength * Math.cos(toRadians(config.totalAngle));
+            const by = Vertex.y + rayLength * Math.sin(toRadians(config.totalAngle));
+            drawPoint(bx, by, fixedElementColor, 5);
+            drawLabel(bx + 15, by + 15, config.endRayLabel, labelColor, 20);
+
+            // 4. ציור הקרניים הפנימיות הקבועות (F, E, D)
+            config.fixedRays.forEach((ray) => {
+                // ציור הקרן הפנימית (דקה יותר)
+                drawRay(Vertex.x, Vertex.y, ray.angle, rayLength * 0.9, innerRayColor, 1.5);
+                
+                // ציור הנקודה והאות בקצה
+                const px = Vertex.x + (rayLength * 0.9) * Math.cos(toRadians(ray.angle));
+                const py = Vertex.y + (rayLength * 0.9) * Math.sin(toRadians(ray.angle));
+                drawPoint(px, py, fixedElementColor, 5);
+                drawLabel(px + 20, py, ray.label, labelColor, 18);
+            });
+
+            // 5. ציור הקרן הנגררת (האדומה)
+            drawRay(Vertex.x, Vertex.y, currentAngle, rayLength, rayColor, 3);
+
+            // 6. ציור הקודקוד A
+            drawPoint(Vertex.x, Vertex.y, fixedElementColor, 6);
+            drawLabel(Vertex.x - 20, Vertex.y - 10, config.vertexLabel, labelColor, 22, true);
+
+            // 7. הצגת מדידות הזוויות
+            drawMeasurements();
+        }
+
+        // פונקציות עזר לציור
+        function drawRay(x, y, angleDeg, length, color, width) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + length * Math.cos(toRadians(angleDeg)), y + length * Math.sin(toRadians(angleDeg)));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawPoint(x, y, color, radius) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawLabel(x, y, text, color, fontSize, bold = false) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = `${bold ? 'bold' : 'normal'} ${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, y);
+            ctx.restore();
+        }
+
+        // ציור המידות בזמן אמת בתוך הקשת
+        function drawMeasurements() {
+            const angle1 = currentAngle;                  // זווית עליונה
+            const angle2 = config.totalAngle - currentAngle; // זווית תחתונה
+            const textRad = arcRadius * 0.65; // מרחק הטקסט מהקודקוד
+
+            if (angle1 >= 4) { // הסתרת הטקסט אם הזווית קטנה מדי
+                const mid1 = angle1 / 2;
+                const tx1 = Vertex.x + textRad * Math.cos(toRadians(mid1));
+                const ty1 = Vertex.y + textRad * Math.sin(toRadians(mid1));
+                drawLabel(tx1, ty1, `${Math.round(angle1)}°`, measurementColor, 16, true);
+            }
+
+            if (angle2 >= 4) {
+                const mid2 = currentAngle + angle2 / 2;
+                const tx2 = Vertex.x + textRad * Math.cos(toRadians(mid2));
+                const ty2 = Vertex.y + textRad * Math.sin(toRadians(mid2));
+                drawLabel(tx2, ty2, `${Math.round(angle2)}°`, measurementColor, 16, true);
+            }
+        }
+
+        // --- ניהול אינטראקציה וגרירה ---
+
+        function updateAngleFromEvent(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const mouseX = (clientX - rect.left) * scaleX;
+            const mouseY = (clientY - rect.top) * scaleY;
+
+            // חישוב הזווית מהקודקוד A לעכבר
+            const dx = mouseX - Vertex.x;
+            const dy = mouseY - Vertex.y;
+
+            let angle = Math.atan2(dy, dx);
+            let degrees = toDegrees(angle);
+
+            if (degrees < 0) degrees += 360;
+
+            // הגבלת הגרירה בדיוק בין 0 ל-72 מעלות
+            if (degrees > config.totalAngle && degrees < 270) {
+                degrees = config.totalAngle;
+            } else if (degrees >= 270 || degrees < 0) {
+                degrees = 0;
+            }
+
+            // עדכון וציור מחדש רק אם יש שינוי
+            if (Math.abs(currentAngle - degrees) > 0.2) {
+                currentAngle = degrees;
+                draw();
+            }
+        }
+
+        // אירועי עכבר
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            updateAngleFromEvent(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            updateAngleFromEvent(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        // אירועי מגע (מובייל/טאבלט)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            updateAngleFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            updateAngleFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        window.addEventListener('touchend', () => { isDragging = false; });
+
+        // תקשורת postMessage מול ה-iframe (במידה וצריך ב-LMS)
+        window.addEventListener('message', function(event) {
+            const message = event.data;
+            if (message.type === 'reset') {
+                currentAngle = 45; // איפוס חזרה לנקודה D
+                draw();
+                window.parent.postMessage({ type: 'resetComplete', success: true }, '*');
+            } else if (message.type === 'getState') {
+                window.parent.postMessage({ 
+                    type: 'state', 
+                    currentAngle: Math.round(currentAngle), 
+                    timestamp: Date.now() 
+                }, '*');
+            }
+        });
+
+        // ציור ראשוני כשהדף עולה
+        draw();
+    </script>
+</body>
+</html>
