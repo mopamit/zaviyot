@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Angle</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #e0e0e0;
+            background-color: #ffffff;
+            cursor: pointer;
+            touch-action: none; /* Prevent scrolling while dragging on touch devices */
+        }
+    </style>
+</head>
+<body data-testim-main-word-scripts-loaded="true">
+    <canvas id="angleCanvas" width="600" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById('angleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Colors setup (matching the image)
+        const gridColor = 'rgba(200, 200, 200, 0.3)';
+        const rayColor = '#E74C3C';          // Red moving ray
+        const fixedElementColor = '#34495E'; // Dark slate for fixed rays and points
+        const arcFillColor = 'rgba(52, 152, 219, 0.3)';   // Light blue fill
+        const arcStrokeColor = '#5DADE2';    // Blue border for arc
+        const measurementColor = '#E67E22';  // Orange for angle text
+        const labelColor = '#2C3E50';        // Dark color for letters
+
+        // Main Configuration
+        const config = {
+            totalAngle: 110,
+            vertexLabel: "H",
+            startRayLabel: "B",
+            endRayLabel: "A",
+            // Points along the outside (measured clockwise from horizontal 0°)
+            snapPoints: [
+                { angle: 90, label: "C" }, // Straight down
+                { angle: 70, label: "D" },
+                { angle: 55, label: "E" },
+                { angle: 30, label: "F" }
+            ]
+        };
+
+        // Layout Constants
+        const H = { x: 200, y: 150 }; // Vertex position
+        const rayLength = 260;
+        const arcRadius = 120;
+        const pointRadius = 180; // Distance of C,D,E,F from Vertex
+
+        // Application State
+        let currentAngle = 42; // Start exactly at 42° to match the image
+        let isDragging = false;
+
+        // Math Helpers
+        const toRadians = (deg) => deg * Math.PI / 180;
+        const toDegrees = (rad) => rad * 180 / Math.PI;
+
+        // Drawing Functions
+        function drawGrid() {
+            ctx.save();
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += 20) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += 20) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            // 1. Draw the filled background arc for the full 110 degrees
+            ctx.save();
+            ctx.fillStyle = arcFillColor;
+            ctx.beginPath();
+            ctx.moveTo(H.x, H.y);
+            ctx.arc(H.x, H.y, arcRadius, 0, toRadians(config.totalAngle));
+            ctx.closePath();
+            ctx.fill();
+
+            // 2. Draw the arc stroke (just the curve)
+            ctx.strokeStyle = arcStrokeColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(H.x, H.y, arcRadius, 0, toRadians(config.totalAngle));
+            ctx.stroke();
+            ctx.restore();
+
+            // 3. Draw the fixed rays (HB and HA)
+            drawRay(H.x, H.y, 0, rayLength, fixedElementColor, 3); // Ray HB (Horizontal)
+            drawLabel(H.x + rayLength + 25, H.y, config.startRayLabel, labelColor, 20);
+
+            drawRay(H.x, H.y, config.totalAngle, rayLength, fixedElementColor, 3); // Ray HA (110 deg down-left)
+            drawLabel(H.x + rayLength * Math.cos(toRadians(config.totalAngle)) - 15, 
+                      H.y + rayLength * Math.sin(toRadians(config.totalAngle)) + 25, config.endRayLabel, labelColor, 20);
+
+            // 4. Draw the movable red ray
+            drawRay(H.x, H.y, currentAngle, rayLength, rayColor, 3);
+
+            // 5. Draw the external points (C, D, E, F)
+            config.snapPoints.forEach(pt => {
+                const px = H.x + pointRadius * Math.cos(toRadians(pt.angle));
+                const py = H.y + pointRadius * Math.sin(toRadians(pt.angle));
+                drawPoint(px, py, fixedElementColor, 5);
+                drawLabel(px + 15, py + 12, pt.label, labelColor, 16);
+            });
+
+            // 6. Draw Vertex H
+            drawPoint(H.x, H.y, fixedElementColor, 6);
+            drawLabel(H.x, H.y - 20, config.vertexLabel, labelColor, 20, true);
+
+            // 7. Draw the angle measurements
+            drawMeasurements();
+        }
+
+        function drawRay(x, y, angleDeg, length, color, width) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + length * Math.cos(toRadians(angleDeg)), y + length * Math.sin(toRadians(angleDeg)));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawPoint(x, y, color, radius) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawLabel(x, y, text, color, fontSize, bold = false) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = `${bold ? 'bold' : 'normal'} ${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, y);
+            ctx.restore();
+        }
+
+        function drawMeasurements() {
+            const angle1 = currentAngle;
+            const angle2 = config.totalAngle - currentAngle;
+            const textRad = arcRadius * 0.65; // Position inside the arc
+
+            // Top angle measurement
+            if (angle1 >= 5) { // Hide if too small
+                const mid1 = angle1 / 2;
+                const tx1 = H.x + textRad * Math.cos(toRadians(mid1));
+                const ty1 = H.y + textRad * Math.sin(toRadians(mid1));
+                drawLabel(tx1, ty1, `${Math.round(angle1)}°`, measurementColor, 15, true);
+            }
+
+            // Bottom angle measurement
+            if (angle2 >= 5) {
+                const mid2 = currentAngle + angle2 / 2;
+                const tx2 = H.x + textRad * Math.cos(toRadians(mid2));
+                const ty2 = H.y + textRad * Math.sin(toRadians(mid2));
+                drawLabel(tx2, ty2, `${Math.round(angle2)}°`, measurementColor, 15, true);
+            }
+        }
+
+        // --- Interaction Logic ---
+
+        function updateAngleFromEvent(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const mouseX = (clientX - rect.left) * scaleX;
+            const mouseY = (clientY - rect.top) * scaleY;
+
+            // Calculate angle from Vertex H to mouse pointer
+            const dx = mouseX - H.x;
+            const dy = mouseY - H.y;
+
+            let angle = Math.atan2(dy, dx);
+            let degrees = toDegrees(angle);
+
+            // Normalize to 0-360
+            if (degrees < 0) degrees += 360;
+
+            // Clamp the angle strictly between 0 and totalAngle (110)
+            if (degrees > config.totalAngle && degrees < 270) {
+                degrees = config.totalAngle; // Clamp to bottom ray
+            } else if (degrees >= 270 || degrees < 0) {
+                degrees = 0; // Clamp to top ray
+            }
+
+            // Update state and redraw if changed
+            if (Math.abs(currentAngle - degrees) > 0.1) {
+                currentAngle = degrees;
+                draw();
+            }
+        }
+
+        // Mouse Events
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            updateAngleFromEvent(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            updateAngleFromEvent(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        // Touch Events for Mobile Support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            updateAngleFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            updateAngleFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        window.addEventListener('touchend', () => { isDragging = false; });
+
+        // postMessage communication with parent window
+        window.addEventListener('message', function(event) {
+            const message = event.data;
+            if (message.type === 'reset') {
+                currentAngle = 42; // Reset exactly to the image's layout
+                draw();
+                window.parent.postMessage({ type: 'resetComplete', success: true }, '*');
+            } else if (message.type === 'getState') {
+                window.parent.postMessage({ type: 'state', currentAngle: Math.round(currentAngle), timestamp: Date.now() }, '*');
+            }
+        });
+
+        // Initial Draw
+        draw();
+    </script>
+</body>
+</html>
