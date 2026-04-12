@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>חידון זוויות בשעון - חציית זווית של 60°</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        canvas {
+            border: 1px solid #e0e0e0;
+            background-color: #ffffff;
+            cursor: pointer;
+            touch-action: none; /* מונע גלילה בזמן גרירה במובייל */
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+    </style>
+</head>
+<body data-testim-main-word-scripts-loaded="true">
+    <canvas id="angleCanvas" width="600" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById('angleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // הגדרת צבעים מותאמים לתמונה
+        const gridColor = 'rgba(200, 200, 200, 0.3)';
+        const rayColor = '#E74C3C';          // מחוג נגרר (אדום)
+        const fixedElementColor = '#3498DB'; // מחוגים קבועים (כחול)
+        const labelColor = '#2C3E50';        // צבע מספרי השעון (אפור-כחול כהה)
+        const clockBorderColor = '#BDC3C7';  // מסגרת השעון והשנתות
+        const arcFillColor = 'rgba(52, 152, 219, 0.3)';   // מילוי הקשת
+        const arcStrokeColor = '#5DADE2';    // קו מתאר לקשת
+        const measurementColor = '#E67E22';  // טקסט המידות (כתום)
+
+        // הגדרות השעון והזוויות
+        // שעה 12 היא ב-90 מעלות במערכת הצירים, שעה 2 היא ב-30 מעלות.
+        const config = {
+            startAngle: 90,     // 12:00
+            endAngle: 30,       // 2:00
+            totalAngle: 60      // הזווית הכוללת בין 12 ל-2
+        };
+
+        // מיקומים וגדלים על הקנבס
+        const centerX = 300;
+        const centerY = 250;
+        const clockRadius = 170;      // רדיוס מעגל השעון
+        const numberRadius = 205;     // רדיוס מספרי השעון
+        const handLength = 150;       // אורך המחוגים
+        const arcRadius = 75;         // רדיוס קשתות הזווית
+        
+        // מצב נוכחי - המחוג האדום מתחיל על שעה 12 (90 מעלות) כדי להתאים לתמונה
+        let currentAngle = 90; 
+        let isDragging = false;
+
+        // פונקציות עזר מתמטיות
+        const toRadians = (deg) => deg * Math.PI / 180;
+        const toDegrees = (rad) => rad * 180 / Math.PI;
+
+        // ציור רשת הרקע (משבצות)
+        function drawGrid() {
+            ctx.save();
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += 20) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += 20) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ציור פני השעון (מסגרת, שנתות ומספרים)
+        function drawClockFace() {
+            // מעגל המסגרת
+            ctx.save();
+            ctx.strokeStyle = clockBorderColor;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, clockRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // ציור מספרים ושנתות
+            for (let hour = 1; hour <= 12; hour++) {
+                // המרת שעה לזווית (שעה 12 = 90, כל שעה מורידה 30 מעלות)
+                const angle = 90 - (hour * 30);
+                const rad = toRadians(angle);
+
+                // ציור המספר
+                const nx = centerX + Math.cos(rad) * numberRadius;
+                const ny = centerY - Math.sin(rad) * numberRadius;
+                drawLabel(nx, ny, hour.toString(), labelColor, 20, true);
+
+                // ציור השנתה (הקו הקטן בתוך המעגל)
+                const innerR = clockRadius - 12;
+                const outerR = clockRadius;
+                const tx1 = centerX + Math.cos(rad) * innerR;
+                const ty1 = centerY - Math.sin(rad) * innerR;
+                const tx2 = centerX + Math.cos(rad) * outerR;
+                const ty2 = centerY - Math.sin(rad) * outerR;
+
+                ctx.save();
+                ctx.strokeStyle = clockBorderColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(tx1, ty1);
+                ctx.lineTo(tx2, ty2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            // חישוב הזוויות הפנימיות
+            const angle1 = config.startAngle - currentAngle; // מ-12 (90) עד למחוג האדום
+            const angle2 = currentAngle - config.endAngle;   // מהמחוג האדום עד 2 (30)
+
+            // 1. ציור קשתות הזווית
+            if (angle1 >= 2) {
+                drawAngleArc(config.startAngle, currentAngle);
+            }
+            if (angle2 >= 2) {
+                drawAngleArc(currentAngle, config.endAngle);
+            }
+
+            // 2. הצגת המידות בכתום בתוך הקשתות
+            drawMeasurements(angle1, angle2);
+
+            // 3. ציור פני השעון
+            drawClockFace();
+
+            // 4. ציור המחוגים הקבועים (הכחולים) של השעות 12 ו-2
+            drawHand(config.startAngle, fixedElementColor, 5);
+            drawHand(config.endAngle, fixedElementColor, 5);
+
+            // 5. ציור המחוג הנגרר (האדום) שמופיע מעל המחוגים הקבועים
+            drawHand(currentAngle, rayColor, 6);
+
+            // 6. ציור הנקודה המרכזית המחברת את המחוגים
+            drawPoint(centerX, centerY, labelColor, 6);
+        }
+
+        // ציור מחוג
+        function drawHand(angleDeg, color, width) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round'; // קצוות מעוגלים למחוגים
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + handLength * Math.cos(toRadians(angleDeg)), centerY - handLength * Math.sin(toRadians(angleDeg)));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // ציור קשת צבעונית בין שתי זוויות
+        function drawAngleArc(startAngle, endAngle) {
+            ctx.save();
+            ctx.fillStyle = arcFillColor;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            // הקשת מצוירת נגד כיוון השעון (מינוס בציר Y של קנבס)
+            ctx.arc(centerX, centerY, arcRadius, toRadians(-startAngle), toRadians(-endAngle), false);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = arcStrokeColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, arcRadius, toRadians(-startAngle), toRadians(-endAngle), false);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // ציור נקודה
+        function drawPoint(x, y, color, radius) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ציור טקסט מרוכז
+        function drawLabel(x, y, text, color, fontSize, bold = false) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = `${bold ? 'bold' : 'normal'} ${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, y);
+            ctx.restore();
+        }
+
+        // מיקום וציור המעלות בתוך הקשתות
+        function drawMeasurements(angle1, angle2) {
+            const textRad = arcRadius * 0.65; 
+
+            if (angle1 >= 5) {
+                const mid1 = config.startAngle - (angle1 / 2);
+                const tx1 = centerX + textRad * Math.cos(toRadians(mid1));
+                const ty1 = centerY - textRad * Math.sin(toRadians(mid1));
+                drawLabel(tx1, ty1, `${Math.round(angle1)}°`, measurementColor, 16, true);
+            }
+
+            if (angle2 >= 5) {
+                const mid2 = currentAngle - (angle2 / 2);
+                const tx2 = centerX + textRad * Math.cos(toRadians(mid2));
+                const ty2 = centerY - textRad * Math.sin(toRadians(mid2));
+                drawLabel(tx2, ty2, `${Math.round(angle2)}°`, measurementColor, 16, true);
+            }
+        }
+
+        // --- ניהול אינטראקציה וגרירה ---
+
+        function updateAngleFromEvent(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const mouseX = (clientX - rect.left) * scaleX;
+            const mouseY = (clientY - rect.top) * scaleY;
+
+            const dx = mouseX - centerX;
+            const dy = centerY - mouseY; // הפוך כי ה-Y עולה כלפי מטה בקנבס
+
+            let angle = Math.atan2(dy, dx);
+            let degrees = toDegrees(angle);
+
+            if (degrees < 0) degrees += 360;
+
+            // הגבלת הגרירה בדיוק בין שעה 2 (30 מעלות) לשעה 12 (90 מעלות)
+            if (degrees > 90 && degrees < 270) {
+                degrees = 90;
+            } else if (degrees < 30 || degrees >= 270) {
+                degrees = 30;
+            }
+
+            if (Math.abs(currentAngle - degrees) > 0.2) {
+                currentAngle = degrees;
+                draw();
+            }
+        }
+
+        // אירועי עכבר
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            updateAngleFromEvent(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            updateAngleFromEvent(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        canvas.addEventListener('mouseleave', () => { isDragging = false; });
+
+        // אירועי מגע (מובייל/טאבלט)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            updateAngleFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            updateAngleFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        window.addEventListener('touchend', () => { isDragging = false; });
+
+        // תקשורת postMessage מול ה-iframe (LMS)
+        window.addEventListener('message', function(event) {
+            const message = event.data;
+            if (message.type === 'reset') {
+                currentAngle = 90; // חזרה לשעה 12
+                draw();
+                window.parent.postMessage({ type: 'resetComplete', success: true }, '*');
+            } else if (message.type === 'getState') {
+                window.parent.postMessage({ 
+                    type: 'state', 
+                    currentAngle: Math.round(currentAngle), 
+                    timestamp: Date.now() 
+                }, '*');
+            }
+        });
+
+        // ציור ראשוני
+        draw();
+    </script>
+</body>
+</html>
