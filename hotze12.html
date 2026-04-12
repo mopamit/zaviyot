@@ -32,7 +32,7 @@
         const canvas = document.getElementById('angleCanvas');
         const ctx = canvas.getContext('2d');
 
-        // הגדרת צבעים מותאמים (אחיד לכל היישומונים)
+        // הגדרת צבעים מותאמים 
         const gridColor = 'rgba(200, 200, 200, 0.3)';
         const rayColor = '#E74C3C';          // הקרן הנגררת (אדום)
         const fixedElementColor = '#34495E'; // קרניים קבועות וטקסט (כחול-אפור כהה)
@@ -40,7 +40,7 @@
         const arcStrokeColor = '#5DADE2';    // קו מתאר לקשת
         const measurementColor = '#E67E22';  // טקסט המידות (כתום)
 
-        // הגדרות הזווית והקרניים
+        // הגדרות הזווית והקרניים לפי התמונה
         const config = {
             totalAngle: 120,
             vertexLabel: "K",
@@ -53,13 +53,14 @@
             ]
         };
 
-        // מיקומים וגדלים על הקנבס
-        const Vertex = { x: 200, y: 380 }; // קודקוד שמאלי תחתון כדי להשאיר מקום לזווית רחבה
-        const rayLength = 320;
-        const innerRayLength = 270; // הקרניים הפנימיות קצרות יותר לסדר ויזואלי
-        const arcRadius = 140;
+        // מיקומים וגדלים מעודכנים לפי התמונה
+        const Vertex = { x: 230, y: 400 }; // ממורכז קצת יותר ימינה כדי לאפשר ל-KM להפתח שמאלה
+        const mainRayLength = 290;  // קרניים חיצוניות ארוכות
+        const innerRayLength = 230; // קרניים פנימיות קצרות יותר
+        const redRayLength = 240;   // הקרן האדומה באזור אורך הקרניים הפנימיות
+        const arcRadius = 110;      // רדיוס הקשת
         
-        // מצב נוכחי - הקרן הנגררת מתחילה ב-90 מעלות
+        // מצב נוכחי - הקרן הנגררת מתחילה אנכית ב-90 מעלות
         let currentAngle = 90; 
         let isDragging = false;
 
@@ -90,7 +91,6 @@
             ctx.fillStyle = arcFillColor;
             ctx.beginPath();
             ctx.moveTo(Vertex.x, Vertex.y);
-            // קשת מ-0 למעלה נגד כיוון השעון (מינוס בציר Y)
             ctx.arc(Vertex.x, Vertex.y, arcRadius, 0, toRadians(-config.totalAngle), true);
             ctx.closePath();
             ctx.fill();
@@ -103,31 +103,36 @@
             ctx.stroke();
             ctx.restore();
 
-            // ציור הקרניים הראשיות הקבועות (KA ו-KM)
-            drawRay(Vertex.x, Vertex.y, 0, rayLength, fixedElementColor, 3); // KA (אופקית ימינה)
-            drawLabel(Vertex.x + rayLength + 25, Vertex.y, config.startRayLabel, fixedElementColor, 22, true);
+            // --- ציור הקרניים הקבועות (KA ו-KM) ---
+            
+            // KA (אופקית ימינה)
+            drawRay(Vertex.x, Vertex.y, 0, mainRayLength, fixedElementColor, 3); 
+            drawLabel(Vertex.x + mainRayLength + 30, Vertex.y, config.startRayLabel, fixedElementColor, 22);
 
-            drawRay(Vertex.x, Vertex.y, config.totalAngle, rayLength, fixedElementColor, 3); // KM (120 מעלות)
-            const mx = Vertex.x + rayLength * Math.cos(toRadians(config.totalAngle));
-            const my = Vertex.y - rayLength * Math.sin(toRadians(config.totalAngle));
-            drawLabel(mx - 15, my - 20, config.endRayLabel, fixedElementColor, 22, true);
+            // KM (120 מעלות)
+            drawRay(Vertex.x, Vertex.y, config.totalAngle, mainRayLength, fixedElementColor, 3); 
+            const mx = Vertex.x + (mainRayLength + 30) * Math.cos(toRadians(config.totalAngle));
+            const my = Vertex.y - (mainRayLength + 30) * Math.sin(toRadians(config.totalAngle));
+            drawLabel(mx, my, config.endRayLabel, fixedElementColor, 22);
 
-            // ציור הקרניים הפנימיות (KB, KC, KD)
+            // --- ציור הקרניים הפנימיות (KB, KC, KD) ---
             config.fixedRays.forEach((ray) => {
                 drawRay(Vertex.x, Vertex.y, ray.angle, innerRayLength, fixedElementColor, 2);
-                const rx = Vertex.x + innerRayLength * Math.cos(toRadians(ray.angle));
-                const ry = Vertex.y - innerRayLength * Math.sin(toRadians(ray.angle));
-                drawLabel(rx + 20, ry - 15, ray.label, fixedElementColor, 20, true);
+                
+                // מיקום האותיות במרחק קבוע מקצה הקרן
+                const rx = Vertex.x + (innerRayLength + 35) * Math.cos(toRadians(ray.angle));
+                const ry = Vertex.y - (innerRayLength + 35) * Math.sin(toRadians(ray.angle));
+                drawLabel(rx, ry, ray.label, fixedElementColor, 20);
             });
 
-            // ציור הקרן הנגררת (האדומה)
-            drawRay(Vertex.x, Vertex.y, currentAngle, rayLength, rayColor, 4);
+            // --- ציור הקרן הנגררת (האדומה) ללא אות ---
+            drawRay(Vertex.x, Vertex.y, currentAngle, redRayLength, rayColor, 4);
 
             // ציור הקודקוד K (הנקודה המרכזית)
             drawPoint(Vertex.x, Vertex.y, fixedElementColor, 7);
-            drawLabel(Vertex.x - 25, Vertex.y + 15, config.vertexLabel, fixedElementColor, 24, true);
+            drawLabel(Vertex.x, Vertex.y + 25, config.vertexLabel, fixedElementColor, 24);
 
-            // הצגת מדידות הזוויות המשתנות בכתום (התחתונה והעליונה)
+            // הצגת מדידות הזוויות המשתנות בכתום (90 מעלות ו-30 מעלות וכו')
             drawMeasurements();
         }
 
@@ -162,20 +167,22 @@
             ctx.restore();
         }
 
-        // ציור המידות הדינמיות בכתום בתוך הקשת
+        // ציור המידות בכתום בתוך הקשתות
         function drawMeasurements() {
-            const angleBottom = currentAngle;                  // זווית תחתונה (עד הקרן האדומה)
-            const angleTop = config.totalAngle - currentAngle; // זווית עליונה (מהקרן האדומה עד לקרן M)
-            const textRad = arcRadius * 0.65; 
+            const angleBottom = currentAngle;                  
+            const angleTop = config.totalAngle - currentAngle; 
+            const textRad = arcRadius * 0.65; // מיקום הטקסט ביחס לרדיוס
 
-            if (angleBottom >= 5) { // הסתרת טקסט אם הזווית צרה מדי
+            // זווית תחתונה (מ-0 עד הקרן האדומה)
+            if (angleBottom >= 8) { 
                 const mid1 = angleBottom / 2;
                 const tx1 = Vertex.x + textRad * Math.cos(toRadians(mid1));
                 const ty1 = Vertex.y - textRad * Math.sin(toRadians(mid1));
                 drawLabel(tx1, ty1, `${Math.round(angleBottom)}°`, measurementColor, 18, true);
             }
 
-            if (angleTop >= 5) {
+            // זווית עליונה (מהקרן האדומה עד ל-120)
+            if (angleTop >= 8) {
                 const mid2 = currentAngle + angleTop / 2;
                 const tx2 = Vertex.x + textRad * Math.cos(toRadians(mid2));
                 const ty2 = Vertex.y - textRad * Math.sin(toRadians(mid2));
@@ -203,9 +210,9 @@
 
             // הגבלת הגרירה בדיוק בין 0 ל-120 מעלות
             if (degrees > config.totalAngle && degrees < 270) {
-                degrees = config.totalAngle; // נצמד ל-120 מעלות
+                degrees = config.totalAngle;
             } else if (degrees >= 270 || degrees < 0) {
-                degrees = 0;                 // נצמד ל-0 מעלות
+                degrees = 0;                 
             }
 
             if (Math.abs(currentAngle - degrees) > 0.2) {
