@@ -1,0 +1,175 @@
+<html lang="he-IL" class="ff-player-size-option">
+<head>
+  <meta charset="utf-8">
+  <title>שאלות של אלופים (פיז"ה) - צילום - 1</title>
+  <meta http-equiv="x-ua-compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,shrink-to-fit=no,minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <style>
+    html, body { height: 100%; padding: 0; margin: 0 }
+    #app { height: 100%; width: 100%; }
+    /* כאן נשאר ה-CSS המקורי של Toastify כפי ששלחת בתחילת הקוד */
+  </style>
+
+  <script>
+    window.DS = {};
+    window.globals = {
+      DATA_PATH_BASE: '',
+      HAS_FRAME: true,
+      HAS_SLIDE: true,
+      lmsPresent: false,
+      tinCanPresent: false,
+      cmi5Present: false,
+      aoSupport: false,
+      scale: 'Scaled',
+      captureRc: false,
+      browserSize: 'optimal',
+      bgColor: '#282828',
+      features: 'DropInBase,LocalizationCaptionReview,PlayerSizeOption,SlideLevelScale',
+      themeName: 'unified',
+      preloaderColor: '#FFFFFF',
+      suppressAnalytics: false,
+      productChannel: 'stable',
+      publishSource: 'storyline',
+      playerVersion: '3.108.36078.0',
+      publishTimestamp: '2026-03-16T18:07:36.3745979Z',
+      maxIosVideoElements: 10,
+      hasFeature: function(feature) { return this.features.split(',').includes(feature); },
+      parseParams: function(qs) {
+        qs = (qs || window.location.search.substr(1)).split('+').join(' ');
+        var params = {}, tokens, re = /[?&]?([^=]+)=([^&]*)/g;
+        while (tokens = re.exec(qs)) {
+          params[decodeURIComponent(tokens[1]).trim()] = decodeURIComponent(tokens[2]).trim();
+        }
+        return params;
+      }
+    };
+  </script>
+  
+  <script>window.THREE = { };</script>
+  
+  <link type="text/css" href="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/html5/lib/stylesheets/desktop.min.css" rel="stylesheet" data-noprefix="true">
+  <script src="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/html5/lib/scripts/frame.desktop.min.js"></script>
+  <script src="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/html5/data/js/frame.js"></script>
+  <script src="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/html5/lib/scripts/slides.min.js"></script>
+  <script type="text/javascript" src="https://lomdot.education.gov.il/metodica/720active/common/xapiwrapper.min.js"></script>
+  <script type="text/javascript" src="https://lomdot.education.gov.il/metodica/720active/common/xapi-720-b.js"></script>
+</head>
+
+<body style="background: #282828" class="cs-HTML theme-unified view-desktop is-landscape ff-on ff-drop-in-base ff-localization-caption-review ff-player-size-option ff-slide-level-scale chromeless" role="presentation">
+
+  <div id="preso">
+     </div>
+
+  <script src="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/story_content/triggers.js" type="text/javascript"></script>
+  <script src="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/story_content/user.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" href="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/html5/data/css/output.min.css" data-noprefix="">
+  <script src="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/html5/lib/scripts/bootstrapper.min.js"></script>
+
+  <div id="focusBoxes"></div>
+  <div id="transcript-container"></div>
+
+  <script>
+  (function() {
+      // 1. הגבלת ניסיונות הרמטית ל-2 ניסיונות בלבד
+      let attempts = parseInt(sessionStorage.getItem('game_attempts_ai')) || 0;
+      const MAX_ATTEMPTS = 2;
+
+      function saveAttempts() {
+          sessionStorage.setItem('game_attempts_ai', attempts);
+      }
+
+      // 2. חסימת כפתורים
+      function disableButtons() {
+          const checkBtns = document.querySelectorAll('[data-acc-text*="לחצו לבדיקה"], [data-acc-text*="צדקתי"]');
+          const resetBtns = document.querySelectorAll('[data-acc-text*="איפוס"]');
+          
+          checkBtns.forEach(btn => {
+              btn.style.pointerEvents = 'none';
+              btn.style.opacity = '0.5';
+              btn.setAttribute('disabled', 'true');
+          });
+          resetBtns.forEach(btn => {
+              btn.style.pointerEvents = 'none';
+              btn.style.opacity = '0.5';
+              btn.setAttribute('disabled', 'true');
+          });
+      }
+
+      // 3. הסרת 'התחל מחדש' מכל מקום
+      function hideRestartButtons() {
+          const restartBtns = document.querySelectorAll('[data-acc-text*="התחל מחדש"], [data-acc-text*="שחקו שוב"]');
+          restartBtns.forEach(btn => {
+              btn.style.display = 'none';
+          });
+      }
+
+      // 4. טקסט סיום מותאם אישית
+      function showCustomFeedback(score) {
+          const feedbackEl = document.createElement('div');
+          feedbackEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:30px;border:3px solid #1f497d;border-radius:12px;z-index:999999;color:#1f497d;font-size:28px;text-align:center;direction:rtl;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-family:sans-serif;font-weight:bold;';
+          feedbackEl.innerText = `לא נורא, אולי בפעם הבאה! הציון הסופי הוא ${score}`;
+          document.body.appendChild(feedbackEl);
+      }
+
+      // האזנה שוטפת לשינויים במסך כדי לתפוס כפתורים שנוצרים דינמית
+      const observer = new MutationObserver(() => {
+          hideRestartButtons();
+
+          // כפתור איפוס לא מאפס את הניסיונות של המשתמש!
+          const resetBtn = document.querySelector('[data-acc-text*="איפוס"]');
+          if (resetBtn && !resetBtn.dataset.hooked) {
+              resetBtn.dataset.hooked = 'true';
+              resetBtn.addEventListener('click', () => {
+                  saveAttempts(); 
+              });
+          }
+
+          // ספירת ניסיונות בעת לחיצה על בדיקה
+          const checkBtn = document.querySelector('[data-acc-text*="לחצו לבדיקה"], [data-acc-text*="צדקתי"]');
+          if (checkBtn && !checkBtn.dataset.hooked) {
+              checkBtn.dataset.hooked = 'true';
+              checkBtn.addEventListener('click', () => {
+                  if (attempts < MAX_ATTEMPTS) {
+                      attempts++;
+                      saveAttempts();
+                  }
+              });
+          }
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      // 5. שמירה על הקיים: יירוט postMessage
+      const originalPostMessage = window.parent.postMessage;
+      window.postMessage = window.parent.postMessage = function(message, targetOrigin, transfer) {
+          
+          if (message && typeof message.score !== 'undefined') {
+              const score = message.score;
+              
+              if (score === 100 || score === 1) { // בהתאם לפורמט (0-1 או 0-100)
+                  disableButtons();
+                  const checkBtns = document.querySelectorAll('[data-acc-text*="לחצו לבדיקה"], [data-acc-text*="צדקתי"]');
+                  checkBtns.forEach(btn => btn.style.display = 'none'); // הסתרת 'צדקתי' בניצחון
+              } else if (attempts >= MAX_ATTEMPTS) {
+                  disableButtons();
+                  showCustomFeedback(score);
+              }
+          }
+          
+          // שחרור ההודעה הלאה
+          if (originalPostMessage) {
+              originalPostMessage.apply(this, arguments);
+          }
+      };
+
+      // בדיקה בטעינת העמוד: אם נגמרו הניסיונות - נעל הכל
+      if (attempts >= MAX_ATTEMPTS) {
+          disableButtons();
+      }
+
+  })();
+  </script>
+</body>
+</html>
