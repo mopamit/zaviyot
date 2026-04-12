@@ -27,7 +27,7 @@
             width: 40%;
             background-color: #004b79;
             color: white;
-            padding: 40px;
+            padding: 25px 35px; /* הוקטן כדי להתאים למסכי כרומבוק */
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
@@ -35,33 +35,46 @@
             border-bottom-left-radius: 40px;
             box-shadow: -5px 0 15px rgba(0,0,0,0.2);
             z-index: 2;
+            overflow-y: auto; /* פס גלילה יופיע רק אם חסר מקום במסך */
+        }
+
+        /* עיצוב פס הגלילה למראה נקי */
+        .right-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        .right-panel::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
         }
 
         .logo-area {
             text-align: right;
-            margin-bottom: 30px;
-        }
-
-        .logo-area img {
-            width: 150px;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
             margin-bottom: 20px;
         }
 
-        p {
-            font-size: 1.4rem;
-            line-height: 1.5;
+        .logo-area img {
+            width: 120px; /* הוקטן מעט */
+        }
+
+        /* גדלי טקסט מותאמים לכרומבוק */
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
             margin-bottom: 15px;
+            margin-top: 0;
+        }
+
+        p {
+            font-size: 1.15rem;
+            line-height: 1.4;
+            margin-bottom: 12px;
         }
 
         .instruction {
             font-weight: 800;
-            font-size: 1.6rem;
-            margin-top: 30px;
+            font-size: 1.35rem;
+            margin-top: 20px;
+            color: #e0f2fe;
         }
 
         /* צד שמאל - תמונה ואזורי לחיצה */
@@ -74,11 +87,12 @@
             align-items: center;
             background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
             background-size: 20px 20px;
+            overflow: hidden;
         }
 
         .image-wrapper {
             position: relative;
-            width: 90%;
+            width: 95%;
             max-width: 900px;
         }
 
@@ -88,43 +102,97 @@
             display: block;
         }
 
-        /* קווי הלחיצה השקופים שיושבים על התמונה */
-        /* הערה: המיקומים (top/left/rotate) מותאמים בערך לתמונה, ניתן לדייק אותם */
-        .hotspot {
+        /* הקשת הצהובה של 84 מעלות */
+        .arc-container {
             position: absolute;
-            width: 15px;
-            height: 45%;
-            background-color: rgba(255, 255, 0, 0); /* שנה ל-0.3 כדי לראות את הקווים בזמן פיתוח */
+            top: 25.5%; /* מיקום ביחס לתמונה המקורית */
+            left: 31%;
+            width: 38%;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .arc-container img {
+            width: 100%;
+            display: block;
+        }
+
+        .arc-text {
+            position: absolute;
+            top: 80%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.6vw; /* גודל דינמי לפי רוחב המסך */
+            color: #1f497d;
+            font-weight: 800;
+        }
+
+        /* הגדרת הקווים המקווקוים */
+        .lines-container {
+            position: absolute;
+            top: 13.5%;
+            left: 45.3%;
+            width: 30px;
+            height: 60%;
+            z-index: 10;
+        }
+
+        .hotspot-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: top center;
             cursor: pointer;
-            border-radius: 10px;
-            transition: 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
         }
 
-        .hotspot:hover {
-            background-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+        .hotspot-line::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            border-left: 4px dotted #333;
+            transition: all 0.2s ease-in-out;
         }
 
-        /* מיקומי הקווים (מקווקווים) בתמונה */
-        #line-1 { top: 10%; left: 35%; transform: rotate(-35deg); } /* קו שמאלי ביותר */
-        #line-2 { top: 10%; left: 42%; transform: rotate(-15deg); } 
-        #line-3-correct { top: 10%; left: 50%; transform: rotate(0deg); } /* האמצעי - קו C (הנכון) */
-        #line-4 { top: 10%; left: 58%; transform: rotate(15deg); }
-        #line-5 { top: 10%; left: 65%; transform: rotate(35deg); } /* קו ימני ביותר */
+        .hotspot-line:hover::before {
+            border-left: 6px dashed #fff;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.9));
+        }
+
+        #line-1 { transform: rotate(-55deg); height: 60%; }
+        #line-2 { transform: rotate(-28deg); height: 80%; }
+        #line-3-correct { transform: rotate(0deg); height: 95%; }
+        #line-4 { transform: rotate(28deg); height: 80%; }
+        #line-5 { transform: rotate(55deg); height: 60%; }
 
         /* חיווי ויזואלי (V או X) */
         .feedback-icon {
-            position: absolute;
-            font-size: 40px;
+            font-size: 35px;
             font-weight: bold;
             display: none;
             pointer-events: none;
             text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            position: relative;
+            bottom: -20px;
         }
+        
+        #line-1 .feedback-icon { transform: rotate(55deg); }
+        #line-2 .feedback-icon { transform: rotate(28deg); }
+        #line-4 .feedback-icon { transform: rotate(-28deg); }
+        #line-5 .feedback-icon { transform: rotate(-55deg); }
+
         .correct-icon { color: #07bc0c; }
         .wrong-icon { color: #e74c3c; }
 
-        /* מודל סיום (משוב מותאם) */
+        /* מודל סיום */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -132,16 +200,16 @@
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 10;
+            z-index: 20;
         }
 
         .modal-content {
             background: #fff;
-            padding: 40px;
-            border-radius: 15px;
+            padding: 30px;
+            border-radius: 12px;
             border: 4px solid #004b79;
             text-align: center;
-            font-size: 2rem;
+            font-size: 1.8rem;
             color: #004b79;
             font-weight: 800;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -167,21 +235,29 @@
             <div class="image-wrapper">
                 <img class="main-image" src="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/mobile/5tqDB9Pnhfs.png" alt="גינת כלבים">
                 
-                <div class="hotspot" id="line-1" onclick="handleGuess(false, this)">
-                    <span class="feedback-icon wrong-icon">✖</span>
+                <div class="arc-container">
+                    <img src="https://lomdot.education.gov.il/metodica/720active/math/angles/lesson3/methodica-math-angles-ls03-05001/mobile/6B3TTfekXBY.png" alt="קשת צהובה">
+                    <span class="arc-text">84°</span>
                 </div>
-                <div class="hotspot" id="line-2" onclick="handleGuess(false, this)">
-                    <span class="feedback-icon wrong-icon">✖</span>
+
+                <div class="lines-container">
+                    <div class="hotspot-line" id="line-1" onclick="handleGuess(false, this)">
+                        <span class="feedback-icon wrong-icon">✖</span>
+                    </div>
+                    <div class="hotspot-line" id="line-2" onclick="handleGuess(false, this)">
+                        <span class="feedback-icon wrong-icon">✖</span>
+                    </div>
+                    <div class="hotspot-line" id="line-3-correct" onclick="handleGuess(true, this)">
+                        <span class="feedback-icon correct-icon">✔</span>
+                    </div>
+                    <div class="hotspot-line" id="line-4" onclick="handleGuess(false, this)">
+                        <span class="feedback-icon wrong-icon">✖</span>
+                    </div>
+                    <div class="hotspot-line" id="line-5" onclick="handleGuess(false, this)">
+                        <span class="feedback-icon wrong-icon">✖</span>
+                    </div>
                 </div>
-                <div class="hotspot" id="line-3-correct" onclick="handleGuess(true, this)">
-                    <span class="feedback-icon correct-icon">✔</span>
-                </div>
-                <div class="hotspot" id="line-4" onclick="handleGuess(false, this)">
-                    <span class="feedback-icon wrong-icon">✖</span>
-                </div>
-                <div class="hotspot" id="line-5" onclick="handleGuess(false, this)">
-                    <span class="feedback-icon wrong-icon">✖</span>
-                </div>
+
             </div>
         </div>
     </div>
@@ -191,10 +267,9 @@
     </div>
 
     <script>
-        // --- לוגיקת המשחק מבוססת הפרומפט ---
+        // --- לוגיקת המשחק (postMessage וניסיונות) ---
         
         const MAX_ATTEMPTS = 2;
-        // שליפת מספר הניסיונות מהסשן כדי לשמור על רציפות גם ברענון
         let attempts = parseInt(sessionStorage.getItem('custom_game_attempts')) || 0;
         let isGameLocked = sessionStorage.getItem('custom_game_locked') === 'true';
 
@@ -206,8 +281,7 @@
         function lockGame() {
             isGameLocked = true;
             saveState();
-            // ביטול אפשרות הלחיצה על כל הקווים
-            const hotspots = document.querySelectorAll('.hotspot');
+            const hotspots = document.querySelectorAll('.hotspot-line');
             hotspots.forEach(spot => {
                 spot.style.pointerEvents = 'none';
             });
@@ -226,45 +300,37 @@
             attempts++;
             saveState();
 
-            // הצגת חיווי ויזואלי על גבי הקו שנלחץ
             const icon = element.querySelector('.feedback-icon');
             icon.style.display = 'block';
-            
-            // מיקום האייקון למטה (בתחתית הקו) כדי שייראה ברור
-            icon.style.bottom = '-30px';
-            icon.style.left = '-10px';
 
             if (isCorrect) {
-                // ניצחון
+                // הצלחה
                 window.parent.postMessage({ score: 100 }, "*");
                 lockGame();
-                // השהייה קלה כדי לתת למשתמש לראות את ה-V
                 setTimeout(() => {
                     showModal("כל הכבוד! עזרת לטכנאי למקם את המצלמה.");
                 }, 800);
             } else {
-                // טעות
+                // שגיאה
                 if (attempts >= MAX_ATTEMPTS) {
-                    // טעות אחרונה (פסילה שנייה)
                     window.parent.postMessage({ score: 0 }, "*");
                     lockGame();
                     setTimeout(() => {
                         showModal("לא נורא, אולי בפעם הבאה! הציון הסופי הוא 0");
                     }, 800);
                 } else {
-                    // יש עוד ניסיון
+                    // יש ניסיון נוסף
                     setTimeout(() => {
-                        icon.style.display = 'none'; // העלמת ה-X כדי לאפשר ניסיון נוסף
+                        icon.style.display = 'none';
                     }, 1500);
                 }
             }
         }
 
-        // נעילת המשחק בטעינה מחדש אם המשתמש כבר סיים/נפסל
+        // נעילה מראש אם המשתמש כבר מיצה ניסיונות
         if (isGameLocked || attempts >= MAX_ATTEMPTS) {
             lockGame();
         }
-
     </script>
 </body>
 </html>
